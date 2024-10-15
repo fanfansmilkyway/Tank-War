@@ -7,7 +7,8 @@ GAMING = True
 
 # "Tank Name": [Attack, Armour, Speed]
 TANK_DATA = {"T34":[50,50,2],
-            "PzIII":[40,40,5]}
+            "PzIII":[40,40,5],
+            "PzIV":[50,50,3]}
 
 tanks = []
 
@@ -23,9 +24,12 @@ class Game:
         self.canvas_height = self.canvas.winfo_screenheight()
         self.tk.protocol("WM_DELETE_WINDOW", self.end_game)
 
+        self.IfReadyFire = False
+
+        self.canvas.bind_all("<KeyPress-a>", self.ReadyFire)
         self.canvas.bind_all("<ButtonPress-1>", self.GetLeftMousePosition) # Left Click
         self.canvas.bind_all("<ButtonPress-2>", self.GetRightMousePosition) # Right Click
-        self.canvas.bind_all("<Escape>", self.CancelAllSelect)
+        self.canvas.bind_all("<Escape>", self.CancelAll)
 
     def GetLeftMousePosition(self, event):
         """
@@ -33,15 +37,32 @@ class Game:
         """
         mouse_x = event.x
         mouse_y = event.y
-        for tank in tanks:
-            bbox = self.canvas.bbox(tank.tank) # Bounding Box
-            if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
-                if tank.IfSelected == False:
-                    tank.IfSelected = True
+        if self.IfReadyFire == False:
+            for tank in tanks:
+                bbox = self.canvas.bbox(tank.tank) # Bounding Box
+                if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
+                    if tank.IfSelected == False:
+                        tank.IfSelected = True
+                    else:
+                        tank.IfSelected = False
                 else:
-                    tank.IfSelected = False
-            else:
-                pass
+                    pass
+        
+        if self.IfReadyFire == True:
+            tanks_ready_fire = []
+            target = None
+            for tank in tanks:
+                if tank.IfSelected == True:
+                    tanks_ready_fire.append(tank)
+                bbox = self.canvas.bbox(tank.tank) # Bounding Box
+                if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
+                    target = tank
+            if target != None:
+                name_list = []
+                for tank in tanks_ready_fire:
+                    name_list.append(tank.tank_name)
+                print(f"{name_list} --> {target.tank_name}")
+
 
     def GetRightMousePosition(self, event):
         """
@@ -55,7 +76,11 @@ class Game:
                 tank.destination_y = mouse_y
                 tank.status = "MOVING"
 
-    def CancelAllSelect(self, event):
+    def ReadyFire(self, event):
+        self.IfReadyFire = True            
+
+    def CancelAll(self, event):
+        self.IfReadyFire = False
         for tank in tanks:
             tank.IfSelected = False
 
@@ -161,6 +186,7 @@ class Tank:
 game = Game()
 tank1 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[500,500])
 tank2 = Tank(canvas=game.canvas, tank_name="PzIII", spawn_point=[500,200])
+tank3 = Tank(canvas=game.canvas, tank_name="PzIV", spawn_point=[500,700])
 print(game.canvas_width, game.canvas_height)
 
 while True:
