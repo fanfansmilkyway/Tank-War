@@ -10,7 +10,7 @@ TANK_DATA = {"T34":[50,50,2],
             "PzIII":[40,40,5],
             "PzIV":[50,50,3]}
 
-tanks = []
+tanks = [] # The list which stores all the tanks
 
 class Game:
     def __init__(self):
@@ -23,6 +23,8 @@ class Game:
         self.canvas_width = self.canvas.winfo_screenwidth()
         self.canvas_height = self.canvas.winfo_screenheight()
         self.tk.protocol("WM_DELETE_WINDOW", self.end_game)
+        self.message_box = Label(self.canvas, text="Attack...", background="grey")
+        self.message_box.pack(side=LEFT, anchor="s")
 
         self.IfReadyFire = False
 
@@ -61,8 +63,8 @@ class Game:
                 name_list = []
                 for tank in tanks_ready_fire:
                     name_list.append(tank.tank_name)
-                print(f"{name_list} --> {target.tank_name}")
-
+                self.ChangeMessageBoxText(f"{name_list} --> {target.tank_name}")
+            self.IfReadyFire = False
 
     def GetRightMousePosition(self, event):
         """
@@ -83,6 +85,9 @@ class Game:
         self.IfReadyFire = False
         for tank in tanks:
             tank.IfSelected = False
+
+    def ChangeMessageBoxText(self, message):
+        self.message_box.config(text=message)
 
     def run(self):
         """
@@ -107,7 +112,9 @@ class Tank:
         self.speed = self.capability[2]
         self.canvas = canvas
         self.spawn_point = spawn_point
-        self.tank = self.canvas.create_text(self.spawn_point[0], self.spawn_point[1], fill="black", text=self.tank_name)
+        # self.tank is the rectangle part of the tank. And self.tank_text shows above the rectangle, labels what the tank is.
+        self.tank = self.canvas.create_rectangle(self.spawn_point[0]-12, self.spawn_point[1]-9, self.spawn_point[0]+12, self.spawn_point[1]+9, outline="red", fill='white')
+        self.tank_text = self.canvas.create_text(self.spawn_point[0], self.spawn_point[1]-18, fill="black", text=self.tank_name, font=("Courier", "14"))
         self.previous_mouse_position = []
         self.destination_x = 0
         self.destination_y = 0
@@ -121,15 +128,22 @@ class Tank:
         self.status = "IDLE" # Status are: "IDLE", "MOVING"
         self.IfSelected = False
 
+    def GetCurrentCoordinate(self):
+        """
+        Return current coordinate(the centre point of the tank)
+        """
+        current_coordinate = self.canvas.coords(self.tank)
+        current_x = current_coordinate[0]+20
+        current_y = current_coordinate[1]+15
+        return current_x, current_y
+
     def TowardDestination(self, destination_x, destination_y):
         """
         About the value of this function returns:
         0: No destination / Movement Completed
         1: Movement not completed(now moving toward the destination)
         """
-        current_coordinate = self.canvas.coords(self.tank)
-        current_x = current_coordinate[0]
-        current_y = current_coordinate[1]
+        current_x, current_y = self.GetCurrentCoordinate()
         if destination_x == current_x and destination_y == current_y:
             return 0  # Already at the destination
         if destination_x != self.previous_destination_x and destination_y != self.previous_destination_y:
@@ -168,6 +182,7 @@ class Tank:
                 return 0
             if self.NumberOfMoves > 0:
                 self.canvas.move(self.tank, self.toward_x, self.toward_y)
+                self.canvas.move(self.tank_text, self.toward_x, self.toward_y)
                 self.canvas.update()
                 self.NumberOfMoves -= 1
                 self.status = "MOVING"
@@ -175,7 +190,7 @@ class Tank:
 
     def run(self):
         if self.IfSelected == False:
-            self.canvas.itemconfig(self.tank, fill="#000000")
+            self.canvas.itemconfig(self.tank, fill="#ffffff")
         if self.IfSelected == True:
             self.canvas.itemconfig(self.tank, fill="#ff0000")
         if self.status == "IDLE":
@@ -194,7 +209,6 @@ while True:
         game.run()
         game.tk.update_idletasks()
         game.tk.update()
-        time.sleep(0.01)
     if GAMING == False:
         break
 
