@@ -1,0 +1,2 @@
+1 pixel = 50 metres
+PixelSpeed(pixel / tick) = RealSpeed(km/h) * 1/180

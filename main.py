@@ -6,9 +6,9 @@ import sys
 GAMING = True
 
 # "Tank Name": [Attack, Armour, Speed]
-TANK_DATA = {"T34":[50,50,2],
-            "PzIII":[40,40,5],
-            "PzIV":[50,50,3]}
+TANK_DATA = {"T34":[50,50,13.8],
+            "PzIII":[40,40,1.0],
+            "PzIV":[50,50,0.6]}
 
 tanks = [] # The list which stores all the tanks
 
@@ -113,8 +113,8 @@ class Tank:
         self.canvas = canvas
         self.spawn_point = spawn_point
         # self.tank is the rectangle part of the tank. And self.tank_text shows above the rectangle, labels what the tank is.
-        self.tank = self.canvas.create_rectangle(self.spawn_point[0]-12, self.spawn_point[1]-9, self.spawn_point[0]+12, self.spawn_point[1]+9, outline="red", fill='white')
-        self.tank_text = self.canvas.create_text(self.spawn_point[0], self.spawn_point[1]-18, fill="black", text=self.tank_name, font=("Courier", "14"))
+        self.tank = self.canvas.create_rectangle(self.spawn_point[0]-8, self.spawn_point[1]-6, self.spawn_point[0]+8, self.spawn_point[1]+6, outline="red", fill='white')
+        self.tank_text = self.canvas.create_text(self.spawn_point[0], self.spawn_point[1]-14, fill="black", text=self.tank_name, font=("Courier", "12"))
         self.previous_mouse_position = []
         self.destination_x = 0
         self.destination_y = 0
@@ -133,8 +133,8 @@ class Tank:
         Return current coordinate(the centre point of the tank)
         """
         current_coordinate = self.canvas.coords(self.tank)
-        current_x = current_coordinate[0]+20
-        current_y = current_coordinate[1]+15
+        current_x = current_coordinate[0]+8
+        current_y = current_coordinate[1]+6
         return current_x, current_y
 
     def TowardDestination(self, destination_x, destination_y):
@@ -209,6 +209,7 @@ while True:
         game.run()
         game.tk.update_idletasks()
         game.tk.update()
+        time.sleep(0.01)
     if GAMING == False:
         break
 
