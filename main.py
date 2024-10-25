@@ -5,12 +5,24 @@ import sys
 
 GAMING = True
 
-# "Tank Name": [Attack, Armour, Speed]
-TANK_DATA = {"T34":[50,50,13.8],
-            "PzIII":[40,40,1.0],
-            "PzIV":[50,50,0.6]}
+# "Tank Name": [Attack, Armour, Speed(pixel / 0.5s)]
+TANK_DATA = {"T34":[50,50,6.94],
+            "PzIII":[40,40,5.56],
+            "PzIV":[50,50,2.78]}
 
 tanks = [] # The list which stores all the tanks
+
+BenchMarkTime = time.time()
+def FrequencyGenerator(frequency=1, bias=0.01):
+    global BenchMarkTime, IfTriggered
+    current_time = time.time()
+    if current_time - BenchMarkTime < (frequency + bias) and current_time - BenchMarkTime > (frequency - bias):
+        BenchMarkTime = current_time
+        IfTriggered = True
+        return True
+    else:
+        IfTriggered = False
+        return False
 
 class Game:
     def __init__(self):
@@ -25,12 +37,11 @@ class Game:
         self.tk.protocol("WM_DELETE_WINDOW", self.end_game)
         self.message_box = Label(self.canvas, text="Attack...", background="grey")
         self.message_box.pack(side=LEFT, anchor="s")
-
         self.IfReadyFire = False
 
         self.canvas.bind_all("<KeyPress-a>", self.ReadyFire)
         self.canvas.bind_all("<ButtonPress-1>", self.GetLeftMousePosition) # Left Click
-        self.canvas.bind_all("<ButtonPress-2>", self.GetRightMousePosition) # Right Click
+        self.canvas.bind_all("<ButtonPress-3>", self.GetRightMousePosition) # Right Click
         self.canvas.bind_all("<Escape>", self.CancelAll)
 
     def GetLeftMousePosition(self, event):
@@ -62,8 +73,9 @@ class Game:
             if target != None:
                 name_list = []
                 for tank in tanks_ready_fire:
+                    tank.shoot(target)
                     name_list.append(tank.tank_name)
-                self.ChangeMessageBoxText(f"{name_list} --> {target.tank_name}")
+                
             self.IfReadyFire = False
 
     def GetRightMousePosition(self, event):
@@ -128,11 +140,13 @@ class Tank:
         self.status = "IDLE" # Status are: "IDLE", "MOVING"
         self.IfSelected = False
 
-    def GetCurrentCoordinate(self):
+    def GetCurrentCoordinate(self, target=None):
         """
-        Return current coordinate(the centre point of the tank)
+        Return current coordinate(the centre point of the tank). Or get other tank's coordinate.
         """
-        current_coordinate = self.canvas.coords(self.tank)
+        if target == None:
+            target = self
+        current_coordinate = self.canvas.coords(target.tank)
         current_x = current_coordinate[0]+8
         current_y = current_coordinate[1]+6
         return current_x, current_y
@@ -184,9 +198,32 @@ class Tank:
                 self.canvas.move(self.tank, self.toward_x, self.toward_y)
                 self.canvas.move(self.tank_text, self.toward_x, self.toward_y)
                 self.canvas.update()
+                
                 self.NumberOfMoves -= 1
                 self.status = "MOVING"
                 return 1
+
+    def shoot(self, target):
+        target_x, target_y = self.GetCurrentCoordinate(target=target)
+        current_x, current_y = self.GetCurrentCoordinate(target=self) # Which is the shooter's coordinate(self is the shooter)
+        if current_x == target_x: # Prevent ZeroDivisionError when calculating "slope"
+            slope = 0
+
+        else:
+            slope = (current_y - target_y) / (current_x - target_x) # The slope of the line formed by target's centre point and shooter's centre point
+            if -3/4 < slope < 3/4:
+                if current_x < target_x: # Shooter is to the left of target
+                    print("Hit REAR")
+                    game.ChangeMessageBoxText("Hit REAR")
+                if current_x > target_x: # Shooter is to the right of target
+                    print("Hit FRONT")
+                    game.ChangeMessageBoxText("Hit FRONT")
+            else:
+                print("Hit SIDE")
+                game.ChangeMessageBoxText("Hit SIDE")
+
+        ShootArrow = self.canvas.create_line(current_x, current_y, target_x, target_y, arrow=LAST)
+        game.tk.after(500, self.canvas.delete, ShootArrow)
 
     def run(self):
         if self.IfSelected == False:
@@ -195,7 +232,7 @@ class Tank:
             self.canvas.itemconfig(self.tank, fill="#ff0000")
         if self.status == "IDLE":
             pass
-        if self.status == "MOVING":
+        if self.status == "MOVING" and IfTriggered == True:
             self.TowardDestination(self.destination_x, self.destination_y)
 
 game = Game()
@@ -204,12 +241,14 @@ tank2 = Tank(canvas=game.canvas, tank_name="PzIII", spawn_point=[500,200])
 tank3 = Tank(canvas=game.canvas, tank_name="PzIV", spawn_point=[500,700])
 print(game.canvas_width, game.canvas_height)
 
+IfTriggered = False # Triggered by function "FrequencyGenerator"
+
 while True:
     if GAMING == True:
+        FrequencyGenerator(frequency=0.5)
         game.run()
         game.tk.update_idletasks()
         game.tk.update()
-        time.sleep(0.01)
     if GAMING == False:
         break
 

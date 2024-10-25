@@ -1,2 +1,4 @@
-1 pixel = 50 metres
-PixelSpeed(pixel / tick) = RealSpeed(km/h) * 1/180
+1 pixel = 1 metres
+PixelSpeed(pixel / 0.5s) = RealSpeed(km/h) * 5/36
+
+Tank Aspect Ratio: 3/4 (16pix / 12pix)
