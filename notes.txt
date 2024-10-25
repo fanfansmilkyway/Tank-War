@@ -2,3 +2,4 @@
 PixelSpeed(pixel / 0.5s) = RealSpeed(km/h) * 5/36
 
 Tank Aspect Ratio: 3/4 (16pix / 12pix)
+Relative Armor Thickness: Real Armor Thickness / cos(SlopeAngle)

@@ -5,10 +5,10 @@ import sys
 
 GAMING = True
 
-# "Tank Name": [Attack, Armour, Speed(pixel / 0.5s)]
-TANK_DATA = {"T34":[50,50,6.94],
-            "PzIII":[40,40,5.56],
-            "PzIV":[50,50,2.78]}
+# "Tank Name": [Attack(100m, 300m, 500m, 1000m, 1500m, <2000m, 3000m>)mm, Relative Armor(front, side, rear), Speed(pixel / 0.5s)]
+TANK_DATA = {"T34":[[85,80,73,68,62],[52,52,46],4.86],
+            "PzIII J":[[55,50,57,47,28,21],[50,30,45],4.16],
+            "PzIV H":[[135,130,123,116,97,92,66],[80,30,20],2.78]}
 
 tanks = [] # The list which stores all the tanks
 
@@ -137,7 +137,7 @@ class Tank:
         self.toward_y = 0
         self.NumberOfMoves = 0
 
-        self.status = "IDLE" # Status are: "IDLE", "MOVING"
+        self.status = "IDLE" # Status are: "IDLE", "MOVING", "DESTROYED"
         self.IfSelected = False
 
     def GetCurrentCoordinate(self, target=None):
@@ -203,27 +203,47 @@ class Tank:
                 self.status = "MOVING"
                 return 1
 
+    def GetHit(self, shooter:str, distance, part:int):
+        """
+        Input: The tank name of the shooter, distance from the shooter, part hit by the shooter.
+        Output: Whether the tank is destroyed.
+        """
+        armor = TANK_DATA[self.tank_name][1][part] # Part: 0 for front, 1 for side, 2 for rear
+        DistanceChoices = [100,300,500,1000,1500]
+        Penetration = TANK_DATA[shooter][0][DistanceChoices.index(min(DistanceChoices, key=lambda x:abs(x-distance)))]
+        if Penetration > armor: # Be Penetrated
+            self.status = "DESTROYED"
+
     def shoot(self, target):
         target_x, target_y = self.GetCurrentCoordinate(target=target)
-        current_x, current_y = self.GetCurrentCoordinate(target=self) # Which is the shooter's coordinate(self is the shooter)
+        current_x, current_y = self.GetCurrentCoordinate(target=self) # Which is the shooter's coordinate(self is the shooter)\
+        hit_part = 0  # 0 for front, 1 for side, 2 for rear
+        distance = math.sqrt((target_x-current_x)**2 + (target_y-current_y)**2)
         if current_x == target_x: # Prevent ZeroDivisionError when calculating "slope"
             slope = 0
-
         else:
             slope = (current_y - target_y) / (current_x - target_x) # The slope of the line formed by target's centre point and shooter's centre point
-            if -3/4 < slope < 3/4:
-                if current_x < target_x: # Shooter is to the left of target
-                    print("Hit REAR")
-                    game.ChangeMessageBoxText("Hit REAR")
-                if current_x > target_x: # Shooter is to the right of target
-                    print("Hit FRONT")
-                    game.ChangeMessageBoxText("Hit FRONT")
-            else:
-                print("Hit SIDE")
-                game.ChangeMessageBoxText("Hit SIDE")
+
+        if -3/4 < slope < 3/4:
+            if current_x < target_x: # Shooter is to the left of target
+                print("Hit REAR")
+                game.ChangeMessageBoxText("Hit REAR")
+                hit_part = 2
+            if current_x > target_x: # Shooter is to the right of target
+                print("Hit FRONT")
+                game.ChangeMessageBoxText("Hit FRONT")
+                hit_part = 0
+        else:
+            print("Hit SIDE")
+            game.ChangeMessageBoxText("Hit SIDE")
+            hit_part = 1
+        
+        target.GetHit(shooter=self.tank_name, distance=distance, part=hit_part)
 
         ShootArrow = self.canvas.create_line(current_x, current_y, target_x, target_y, arrow=LAST)
-        game.tk.after(500, self.canvas.delete, ShootArrow)
+        DistanceLabel = self.canvas.create_text((current_x+target_x)/2+8, (current_y+target_y)/2, text=f"{round(distance)}")
+        game.tk.after(300, self.canvas.delete, ShootArrow)
+        game.tk.after(300, self.canvas.delete, DistanceLabel)
 
     def run(self):
         if self.IfSelected == False:
@@ -234,11 +254,14 @@ class Tank:
             pass
         if self.status == "MOVING" and IfTriggered == True:
             self.TowardDestination(self.destination_x, self.destination_y)
+        if self.status == "DESTROYED":
+            self.canvas.delete(self.tank)
+            tanks.remove(self)
 
 game = Game()
 tank1 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[500,500])
-tank2 = Tank(canvas=game.canvas, tank_name="PzIII", spawn_point=[500,200])
-tank3 = Tank(canvas=game.canvas, tank_name="PzIV", spawn_point=[500,700])
+tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[500,200])
+tank3 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[500,700])
 print(game.canvas_width, game.canvas_height)
 
 IfTriggered = False # Triggered by function "FrequencyGenerator"
