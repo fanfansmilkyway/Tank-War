@@ -1,14 +1,15 @@
 from tkinter import *
 import math
+import random
 import time
 import sys
 
 GAMING = True
 
-# "Tank Name": [Attack(100m, 300m, 500m, 1000m, 1500m, <2000m, 3000m>)mm, Relative Armor(front, side, rear), Speed(pixel / 0.5s)]
-TANK_DATA = {"T34":[[85,80,73,68,62],[52,52,46],4.86],
-            "PzIII J":[[55,50,57,47,28,21],[50,30,45],4.16],
-            "PzIV H":[[135,130,123,116,97,92,66],[80,30,20],2.78]}
+# "Tank Name": [Attack(0m, 100m, 300m, 500m, 1000m, 1500m, 2000m, 3000m)mm, Relative Armor(front, side, rear), Speed(pixel / 0.5s)]
+TANK_DATA = {"T34":[[100,85,80,73,68,62,57,45],[52,52,46],4.86],
+            "PzIII J":[[60,55,50,57,47,28,21,15,5],[50,30,45],4.16],
+            "PzIV H":[[140,135,130,123,109,97,86,68],[80,30,20],2.78]}
 
 tanks = [] # The list which stores all the tanks
 
@@ -209,9 +210,31 @@ class Tank:
         Output: Whether the tank is destroyed.
         """
         armor = TANK_DATA[self.tank_name][1][part] # Part: 0 for front, 1 for side, 2 for rear
-        DistanceChoices = [100,300,500,1000,1500]
-        Penetration = TANK_DATA[shooter][0][DistanceChoices.index(min(DistanceChoices, key=lambda x:abs(x-distance)))]
-        if Penetration > armor: # Be Penetrated
+        DistanceChoices = [0,100,300,500,1000,1500,2000,3000]
+        HigherDistanceChoice = 3000
+        for d in DistanceChoices:
+            if distance <= d:
+                HigherDistanceChoice = d
+                break
+        HigherDistanceChoiceIndex = DistanceChoices.index(HigherDistanceChoice)
+        HigherPenetration = TANK_DATA[shooter][0][HigherDistanceChoiceIndex]
+        if HigherDistanceChoiceIndex != 0:
+            LowerDistanceChoice = DistanceChoices[HigherDistanceChoiceIndex-1]
+            LowerPenetration = TANK_DATA[shooter][0][HigherDistanceChoiceIndex-1]
+        else:
+            LowerDistanceChoice = 0
+            LowerPenetration = HigherPenetration - 1
+        RealPenetration = (HigherPenetration*(distance-LowerDistanceChoice) + LowerPenetration*(HigherDistanceChoice-distance)) / (HigherDistanceChoice-LowerDistanceChoice)
+        print(armor, LowerDistanceChoice, distance, HigherDistanceChoice, LowerPenetration, HigherPenetration, RealPenetration)
+        if RealPenetration - armor > -17:
+            Destroyed_Probability = 1 / ((500 / ((RealPenetration-armor+17)**2))**2 + 1)
+        else:
+            Destroyed_Probability = 0
+        # For further calculation formula details, please see notes.txt
+        print(Destroyed_Probability)
+        IfDestroyed = random.choices([True, False], [Destroyed_Probability, 1-Destroyed_Probability])
+        game.ChangeMessageBoxText(f"{Destroyed_Probability}, {IfDestroyed}")
+        if IfDestroyed == [True]:
             self.status = "DESTROYED"
 
     def shoot(self, target):
@@ -259,9 +282,9 @@ class Tank:
             tanks.remove(self)
 
 game = Game()
-tank1 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[500,500])
-tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[500,200])
-tank3 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[500,700])
+tank1 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[50,50])
+tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[100,1400])
+tank3 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[2400,1400])
 print(game.canvas_width, game.canvas_height)
 
 IfTriggered = False # Triggered by function "FrequencyGenerator"

@@ -3,3 +3,25 @@ PixelSpeed(pixel / 0.5s) = RealSpeed(km/h) * 5/36
 
 Tank Aspect Ratio: 3/4 (16pix / 12pix)
 Relative Armor Thickness: Real Armor Thickness / cos(SlopeAngle)
+
+Tank Destroyed Probability = 1 - 1/((500 / (x+17)^2)^2+1)       x = Penetration - Armor  While x > -17
+
++------------------------------------------------+
+
+Actual Penetration Calculation: (Get the value of RP)
+L: Lower Distance Choice         LP: Penetration of lower distance
+R: Real Distance                *RP: Penetration of real distance (*)
+H: Higher Distance Choice        HP: Penetration of higher distance
+
+L --------- R --------- H     -> Distance
+|           |           |   
+|           |           |
+LP ------- *RP -------- HP    -> Corresponding Penetration
+
+Assume:
+(R - L) / (LP - RP) = (H - R) / (RP - HP)
+
+Hence:
+RP = (HP*(R-L) + LP*(H-R)) / (H-L)
+
++------------------------------------------------+
