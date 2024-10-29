@@ -25,3 +25,25 @@ Hence:
 RP = (HP*(R-L) + LP*(H-R)) / (H-L)
 
 +------------------------------------------------+
+
+Tank(Polygon):
+(x1,y1)------------------(x2,y2)    
+    |                       |   
+    |                       |
+    |                       |
+    |                       |
+(x4,y4)------------------(x3,y3)
+
+Notes: Because we can rotate the tank, so the tank may be not horizontal or vertical. So that, if we want to get the centre point of it, we should get the coordinate of the intersection point of two diagonals.
+
++------------------------------------------------+
+
+Rotation:
+Point P(m,n) rotates around point A(a,b) for θ(theta) degress, and get point Q(x,y)
+*(m,n,a,n,θ are known, x,y are unknown and need to get the value of them)
+
+!: The tkinter coordinate system is different from the normal one. Tkinter's y-axis is the reversed normal y-axis!
+
+Hence:
+x = (m-a)*cosθ - (n-b)*sinθ + a
+y = (m-a)*sinθ + (n-b)*cosθ + b

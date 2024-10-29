@@ -38,12 +38,18 @@ class Game:
         self.tk.protocol("WM_DELETE_WINDOW", self.end_game)
         self.message_box = Label(self.canvas, text="Attack...", background="grey")
         self.message_box.pack(side=LEFT, anchor="s")
+        self.debug_message = Label(self.canvas, text="Debugging", background="grey")
+        self.debug_message.pack(side=RIGHT, anchor="s")
         self.IfReadyFire = False
+
+        self.selected_tanks = []
 
         self.canvas.bind_all("<KeyPress-a>", self.ReadyFire)
         self.canvas.bind_all("<ButtonPress-1>", self.GetLeftMousePosition) # Left Click
         self.canvas.bind_all("<ButtonPress-3>", self.GetRightMousePosition) # Right Click
         self.canvas.bind_all("<Escape>", self.CancelAll)
+        self.canvas.bind_all("<KeyPress-e>", self.RotateClockwise)
+        self.canvas.bind_all("<KeyPress-q>", self.RotateCounterClockwise)
 
     def GetLeftMousePosition(self, event):
         """
@@ -57,27 +63,40 @@ class Game:
                 if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
                     if tank.IfSelected == False:
                         tank.IfSelected = True
+                        self.selected_tanks.append(tank)
                     else:
                         tank.IfSelected = False
+                        self.selected_tanks.remove(tank)
                 else:
                     pass
-        
+
         if self.IfReadyFire == True:
-            tanks_ready_fire = []
             target = None
             for tank in tanks:
-                if tank.IfSelected == True:
-                    tanks_ready_fire.append(tank)
                 bbox = self.canvas.bbox(tank.tank) # Bounding Box
                 if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
                     target = tank
             if target != None:
                 name_list = []
-                for tank in tanks_ready_fire:
+                for tank in self.selected_tanks:
                     tank.shoot(target)
                     name_list.append(tank.tank_name)
                 
             self.IfReadyFire = False
+
+    def RotateCounterClockwise(self, event):
+        """
+        Rotate the tank counterclockwise for 15 degrees.
+        """
+        for tank in self.selected_tanks:
+            tank.rotate(-1)
+
+    def RotateClockwise(self, event):
+        """
+        Rotate the tank clockwise for 15 degrees.
+        """
+        for tank in self.selected_tanks:
+            tank.rotate(1)
 
     def GetRightMousePosition(self, event):
         """
@@ -85,8 +104,7 @@ class Game:
         """
         mouse_x = event.x
         mouse_y = event.y
-        for tank in tanks:
-            if tank.IfSelected == True:
+        for tank in self.selected_tanks:
                 tank.destination_x = mouse_x
                 tank.destination_y = mouse_y
                 tank.status = "MOVING"
@@ -98,9 +116,13 @@ class Game:
         self.IfReadyFire = False
         for tank in tanks:
             tank.IfSelected = False
+        self.selected_tanks.clear()
 
     def ChangeMessageBoxText(self, message):
         self.message_box.config(text=message)
+    
+    def ChangeDebugMessage(self, message):
+        self.debug_message.config(text=message)
 
     def run(self):
         """
@@ -126,8 +148,12 @@ class Tank:
         self.canvas = canvas
         self.spawn_point = spawn_point
         # self.tank is the rectangle part of the tank. And self.tank_text shows above the rectangle, labels what the tank is.
-        self.tank = self.canvas.create_rectangle(self.spawn_point[0]-8, self.spawn_point[1]-6, self.spawn_point[0]+8, self.spawn_point[1]+6, outline="red", fill='white')
-        self.tank_text = self.canvas.create_text(self.spawn_point[0], self.spawn_point[1]-14, fill="black", text=self.tank_name, font=("Courier", "12"))
+        self.vertices = [self.spawn_point[0]-8, self.spawn_point[1]-6, self.spawn_point[0]+8, self.spawn_point[1]-6, self.spawn_point[0]+8, self.spawn_point[1]+6, self.spawn_point[0]-8, self.spawn_point[1]+6]
+        self.tank = self.canvas.create_polygon(self.vertices, outline="red", fill='white')
+        self.tank_text = self.canvas.create_text(self.spawn_point[0], self.spawn_point[1]-14, fill="black", text=self.tank_name, font=("Courier", "10"))
+        self.direction_label = self.canvas.create_line(self.spawn_point[0], self.spawn_point[1], self.spawn_point[0]+20, self.spawn_point[1], arrow=LAST)
+        self.direction_point = [self.spawn_point[0]+20, self.spawn_point[1]]
+        print(self.canvas.coords(self.tank))
         self.previous_mouse_position = []
         self.destination_x = 0
         self.destination_y = 0
@@ -141,24 +167,31 @@ class Tank:
         self.status = "IDLE" # Status are: "IDLE", "MOVING", "DESTROYED"
         self.IfSelected = False
 
-    def GetCurrentCoordinate(self, target=None):
+    def GetCentreCoordinate(self, target=None):
         """
         Return current coordinate(the centre point of the tank). Or get other tank's coordinate.
         """
         if target == None:
             target = self
         current_coordinate = self.canvas.coords(target.tank)
-        current_x = current_coordinate[0]+8
-        current_y = current_coordinate[1]+6
-        return current_x, current_y
-
+        x1, y1, x2, y2, x3, y3, x4, y4 = current_coordinate
+        # Solve linear functions
+        k1 = (y1-y3) / (x1-x3)
+        b1 = y1 - x1*k1
+        k2 = (y2-y4) / (x2-x4)
+        b2 = y2 - x2*k2
+        # Get the intersection point of them(the center point)
+        centre_x = (b2-b1) / (k1-k2)
+        centre_y = k1*centre_x + b1
+        return centre_x, centre_y
+    
     def TowardDestination(self, destination_x, destination_y):
         """
         About the value of this function returns:
         0: No destination / Movement Completed
         1: Movement not completed(now moving toward the destination)
         """
-        current_x, current_y = self.GetCurrentCoordinate()
+        current_x, current_y = self.GetCentreCoordinate()
         if destination_x == current_x and destination_y == current_y:
             return 0  # Already at the destination
         if destination_x != self.previous_destination_x and destination_y != self.previous_destination_y:
@@ -198,11 +231,41 @@ class Tank:
             if self.NumberOfMoves > 0:
                 self.canvas.move(self.tank, self.toward_x, self.toward_y)
                 self.canvas.move(self.tank_text, self.toward_x, self.toward_y)
+                self.canvas.move(self.direction_label, self.toward_x, self.toward_y)
                 self.canvas.update()
                 
                 self.NumberOfMoves -= 1
                 self.status = "MOVING"
                 return 1
+
+    def rotate(self, rotation_times:int):
+        """
+        Rotation_Times: times of rotating 15 degrees. Positive for counterclockwise, Negative for clockwise
+        """
+        vertices = self.canvas.coords(self.tank)
+        vertices = [vertices[i:i+2] for i in range(0, len(vertices), 2)]
+        centre_x, centre_y = self.GetCentreCoordinate()
+        """
+        x = (m-a)*cosθ - (n-b)*sinθ + a
+        y = (m-a)*sinθ + (n-b)*cosθ + b
+        """
+        angle = math.radians(rotation_times*15)
+        cos = math.cos(angle)
+        sin = math.sin(angle)
+        new_vertices = []
+        for coordinate in vertices:
+            x, y = coordinate[0], coordinate[1]
+            x,y = (x-centre_x)*cos - (y-centre_y)*sin + centre_x, (x-centre_x)*sin + (y-centre_y)*cos + centre_y
+            new_vertices.append(x)
+            new_vertices.append(y)
+        direction_x, direction_y = self.direction_point[0], self.direction_point[1]
+        direction_x, direction_y = (direction_x-centre_x)*cos - (direction_y-centre_y)*sin + centre_x, (direction_x-centre_x)*sin + (direction_y-centre_y)*cos + centre_y
+        self.direction_point = [direction_x, direction_y]
+
+        self.canvas.delete(self.direction_label)
+        self.canvas.delete(self.tank)
+        self.direction_label = self.canvas.create_line(centre_x, centre_y, direction_x, direction_y, arrow=LAST)
+        self.tank = self.canvas.create_polygon(new_vertices, outline="red", fill='white')
 
     def GetHit(self, shooter:str, distance, part:int):
         """
@@ -210,13 +273,14 @@ class Tank:
         Output: Whether the tank is destroyed.
         """
         armor = TANK_DATA[self.tank_name][1][part] # Part: 0 for front, 1 for side, 2 for rear
-        DistanceChoices = [0,100,300,500,1000,1500,2000,3000]
+        DistanceChoices = [0,100,300,500,1000,1500,2000]
+        HigherDistances = [0,100,300,500,1000,1500,2000,3000]
         HigherDistanceChoice = 3000
         for d in DistanceChoices:
             if distance <= d:
                 HigherDistanceChoice = d
                 break
-        HigherDistanceChoiceIndex = DistanceChoices.index(HigherDistanceChoice)
+        HigherDistanceChoiceIndex = HigherDistances.index(HigherDistanceChoice)
         HigherPenetration = TANK_DATA[shooter][0][HigherDistanceChoiceIndex]
         if HigherDistanceChoiceIndex != 0:
             LowerDistanceChoice = DistanceChoices[HigherDistanceChoiceIndex-1]
@@ -233,13 +297,13 @@ class Tank:
         # For further calculation formula details, please see notes.txt
         print(Destroyed_Probability)
         IfDestroyed = random.choices([True, False], [Destroyed_Probability, 1-Destroyed_Probability])
-        game.ChangeMessageBoxText(f"{Destroyed_Probability}, {IfDestroyed}")
+        #game.ChangeMessageBoxText(f"{Destroyed_Probability}, {IfDestroyed}")
         if IfDestroyed == [True]:
             self.status = "DESTROYED"
 
     def shoot(self, target):
-        target_x, target_y = self.GetCurrentCoordinate(target=target)
-        current_x, current_y = self.GetCurrentCoordinate(target=self) # Which is the shooter's coordinate(self is the shooter)\
+        target_x, target_y = self.GetCentreCoordinate(target=target)
+        current_x, current_y = self.GetCentreCoordinate(target=self) # Which is the shooter's coordinate(self is the shooter)
         hit_part = 0  # 0 for front, 1 for side, 2 for rear
         distance = math.sqrt((target_x-current_x)**2 + (target_y-current_y)**2)
         if current_x == target_x: # Prevent ZeroDivisionError when calculating "slope"
@@ -247,7 +311,29 @@ class Tank:
         else:
             slope = (current_y - target_y) / (current_x - target_x) # The slope of the line formed by target's centre point and shooter's centre point
 
-        if -3/4 < slope < 3/4:
+        vertices = self.canvas.coords(target.tank)
+
+        tan = 3/4
+        x1,y1,x3,y3 = vertices[0], vertices[1], vertices[4], vertices[5]
+        # Solve linear function(We only need the slope of the linear function)
+        k1 = (y1-y3) / (x1-x3)
+        x2,y2,x4,y4 = vertices[2],vertices[3],vertices[6],vertices[7]
+        k2 = (y2-y4) / (x2-x4)
+        try:
+            gradient_direction = (current_y - self.direction_point[1]) / (current_x - self.direction_point[0])
+        except ZeroDivisionError:
+            gradient_direction = 0
+        
+        intersecting_angle_tan = (gradient_direction - slope) / (1 + gradient_direction*slope) # Positive for acute angle, Negative for obtuse angle
+        game.ChangeDebugMessage(f"Tan:{intersecting_angle_tan}")
+        if abs(intersecting_angle_tan) > tan:
+            hit_part = 1
+            game.ChangeMessageBoxText("Hit SIDE")
+        if intersecting_angle_tan < tan:
+            hit_part = 0
+            game.ChangeMessageBoxText("Hit FRONT or REAR")
+        """
+        if  k2 < slope < k1 or k1 < slope < k2:
             if current_x < target_x: # Shooter is to the left of target
                 print("Hit REAR")
                 game.ChangeMessageBoxText("Hit REAR")
@@ -259,7 +345,7 @@ class Tank:
         else:
             print("Hit SIDE")
             game.ChangeMessageBoxText("Hit SIDE")
-            hit_part = 1
+            hit_part = 1"""
         
         target.GetHit(shooter=self.tank_name, distance=distance, part=hit_part)
 
@@ -285,8 +371,8 @@ game = Game()
 tank1 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[50,50])
 tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[100,1400])
 tank3 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[2400,1400])
-print(game.canvas_width, game.canvas_height)
 
+print(game.canvas_width, game.canvas_height)
 IfTriggered = False # Triggered by function "FrequencyGenerator"
 
 while True:
