@@ -12,6 +12,7 @@ TANK_DATA = {"T34": [[100, 85, 80, 73, 68, 62, 57, 45], [520, 520, 460], 4.86],
              "PzIV H": [[140, 135, 130, 123, 109, 97, 86, 68], [800, 300, 200], 2.78]}
 
 tanks = []  # The list which stores all the tanks
+shells = [] # The list which stores all the shells
 
 BenchMarkTime = time.time()
 
@@ -137,6 +138,8 @@ class Game:
         """
         for tank in tanks:
             tank.run()
+        for shell in shells:
+            shell.travel()
 
     def end_game(self):
         global GAMING
@@ -289,7 +292,7 @@ class Tank:
         self.tank = self.canvas.create_polygon(
             new_vertices, outline="red", fill='white')
 
-    def GetHit(self, shooter: str, distance, part: int):
+    def GetHit(self, shooter: str, distance:float, part: int):
         """
         Input: The tank name of the shooter, distance from the shooter, part hit by the shooter.
         Output: Whether the tank is destroyed.
@@ -326,8 +329,8 @@ class Tank:
         # game.ChangeMessageBoxText(f"{Destroyed_Probability}, {IfDestroyed}")
         if IfDestroyed == [True]:
             self.status = "DESTROYED"
-
-    def shell(self, target, speed=0.1):
+    """
+    def shell(self, target, speed=12):
         target_vertices = self.canvas.coords(target.tank)
         target_x, target_y = target.GetCentreCoordinate()
         current_x, current_y = self.GetCentreCoordinate(target=self)
@@ -337,6 +340,7 @@ class Tank:
 
         self.canvas.create_line(target_vertices[0], target_vertices[1],
                                 target_vertices[2], target_vertices[3], arrow=LAST, fill="red")
+        shell_id = self.canvas.create_oval(current_x-3,current_y-3,current_x+3,current_y+3, fill="grey")
         # Shell travelling
         shell_x = current_x
         shell_y = current_y
@@ -362,6 +366,7 @@ class Tank:
         while True:
             shell_x += toward_x
             shell_y += toward_y
+            self.canvas.move(shell_id, toward_x, toward_y)
             for side in IndexList:
                 index = IndexList.index(side)
                 x1, y1, x2, y2 = target_vertices[side[0]], target_vertices[side[1]], target_vertices[side[2]], target_vertices[side[3]]
@@ -387,16 +392,15 @@ class Tank:
                 print("NOT HIT")
                 game.ChangeDebugMessage("NOT HIT")
                 return -1   # Not Hit
+            time.sleep(0.01) # 100 fps
+    """
 
     def shoot(self, target):
         target_x, target_y = self.GetCentreCoordinate(target=target)
         # Which is the shooter's coordinate(self is the shooter)
         current_x, current_y = self.GetCentreCoordinate(target=self)
-        hit_part = -1  # 0 for front, 1 for side, 2 for rear
         distance = math.sqrt((target_x-current_x)**2 + (target_y-current_y)**2)
-        hit_part = self.shell(target=target)
-
-        target.GetHit(shooter=self.tank_name, distance=distance, part=hit_part)
+        Shell(canvas=game.canvas, shooter=self, target=target)
 
         ShootArrow = self.canvas.create_line(
             current_x, current_y, target_x, target_y, arrow=LAST, fill='black')
@@ -418,6 +422,97 @@ class Tank:
             self.canvas.delete(self.tank)
             tanks.remove(self)
 
+class Shell:
+    def __init__(self, canvas:Canvas, shooter:Tank, target:Tank, speed=15):
+        self.canvas = canvas
+        self.shooter = shooter
+        self.target = target
+        self.speed = speed
+        self.target_x, self.target_y = self.target.GetCentreCoordinate()
+        self.shooter_x, self.shooter_y = self.shooter.GetCentreCoordinate()
+        self.shell_id = self.canvas.create_oval(self.shooter_x-3,self.shooter_y-3,self.shooter_x+3,self.shooter_y+3, fill="grey")
+        self.shell_x = self.shooter_x
+        self.shell_y = self.shooter_y
+        self.toward_x = 0
+        self.toward_y = 0
+        self.distance = math.sqrt((self.shooter_x-self.target_x)**2 + (self.shooter_y-self.target_y)**2)
+        self.shoot()
+        shells.append(self)
+
+    def shoot(self):
+        """
+        Calculate the route of the shell.
+        """
+        destination_x, destination_y = self.target_x, self.target_y
+        if self.shooter_y != destination_y:
+            CalculationVar = (destination_x-self.shooter_x) / (destination_y-self.shooter_y)
+            self.toward_y = self.speed / math.sqrt(CalculationVar**2 + 1)
+            self.toward_x = abs(CalculationVar * self.toward_y)
+            if destination_y - self.shooter_y < 0:
+                self.toward_y = -self.toward_y
+            if destination_x - self.shooter_x < 0:
+                self.toward_x = -self.toward_x
+
+        if self.shooter_y == destination_y:  # Prevent DividedByZero Error in CalculationVar
+            if destination_x - self.shooter_x < 0:
+                self.toward_x = -self.speed
+            if destination_x - self.shooter_y > 0:
+                self.toward_x = self.speed
+            self.toward_y = 0
+
+    def travel(self):
+        """
+        The shell travels towards the target, and determine which side of the target tank it hits.
+        """
+        target_vertices = self.canvas.coords(self.target.tank)
+        IndexList = [[0, 1, 2, 3], [2, 3, 4, 5], [4, 5, 6, 7], [6, 7, 0, 1]]
+        toward_x, toward_y = self.toward_x, self.toward_y
+        self.shell_x += toward_x
+        self.shell_y += toward_y
+        self.canvas.move(self.shell_id, toward_x, toward_y)
+        for side in IndexList:
+                index = IndexList.index(side)
+                x1, y1, x2, y2 = target_vertices[side[0]], target_vertices[side[1]], target_vertices[side[2]], target_vertices[side[3]]
+                # Determine whether the shell is 
+                if abs(math.sqrt((x1-x2)**2 + (y1-y2)**2) - math.sqrt((x1-self.shell_x)**2 + (y1-self.shell_y)**2) - math.sqrt((x2-self.shell_x)**2 + (y2-self.shell_y)**2)) <= 2:
+                    if index == 3:
+                        game.ChangeDebugMessage("HIT REAR")
+                        self.target.GetHit(shooter=self.shooter.tank_name, part=2, distance=self.distance)
+                        shells.remove(self)
+                        self.canvas.delete(self.shell_id)
+                        del(self)
+                        return 2
+                    if index == 2:
+                        game.ChangeDebugMessage("HIT SIDE")
+                        # 0 for front, 1 for side, 2 for rear
+                        self.target.GetHit(shooter=self.shooter.tank_name, part=1, distance=self.distance)
+                        shells.remove(self)
+                        self.canvas.delete(self.shell_id)
+                        del(self)
+                        return 1
+                    if index == 1:
+                        game.ChangeDebugMessage("HIT FRONT")
+                        self.target.GetHit(shooter=self.shooter.tank_name, part=0, distance=self.distance)
+                        shells.remove(self)
+                        self.canvas.delete(self.shell_id)
+                        del(self)
+                        return 0
+                    if index == 0:
+                        game.ChangeDebugMessage("HIT SIDE")
+                        # 0 for front, 1 for side, 2 for rear
+                        self.target.GetHit(shooter=self.shooter.tank_name, part=1, distance=self.distance)
+                        shells.remove(self)
+                        self.canvas.delete(self.shell_id)
+                        del(self)
+                        return 1
+
+        print(f"CYCLE{self.shell_x, self.shell_y}")
+        if self.shell_x <= 0 or self.shell_x >= 1512 or self.shell_y <= 0 or self.shell_y >= 982:
+            print("NOT HIT")
+            game.ChangeDebugMessage("NOT HIT")
+            shells.remove(self)
+            del(self)
+            return -1   # Not Hit
 
 game = Game()
 tank1 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50])
@@ -426,13 +521,16 @@ tank3 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[1300, 800])
 
 print(game.canvas_width, game.canvas_height)
 IfTriggered = False  # Triggered by function "FrequencyGenerator"
+Tick = False
 
 while True:
     if GAMING == True:
+        Tick = True
         FrequencyGenerator(frequency=0.5)
         game.run()
         game.tk.update_idletasks()
         game.tk.update()
+        Tick = False
         time.sleep(0.01)  # 100 fps
     if GAMING == False:
         break
