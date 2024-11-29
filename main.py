@@ -3,23 +3,32 @@ import math
 import random
 import time
 import sys
+import playsound3
 
 GAMING = True
+RefreshRate = 100 
+"""
+The RefreshRate is dynamically adjusted, depending on the performance of the console.
+The term "tick" means 100/s, "tick" is not associated with the RefreshRate.
+"""
 
-# "Tank Name": [Attack(0m, 100m, 300m, 500m, 1000m, 1500m, 2000m, 3000m)mm, Relative Armor(front, side, rear), Speed(pixel / tick)]
-TANK_DATA = {"T34": [[100, 85, 80, 73, 68, 62, 57, 45], [520, 520, 460], 0.0972],
-             "PzIII J": [[60, 55, 50, 57, 47, 28, 21, 15, 5], [500, 300, 450], 0.0832],
-             "PzIV H": [[140, 135, 130, 123, 109, 97, 86, 68], [800, 300, 200], 0.0556]}
+# "Tank Name": [Attack(0m, 100m, 300m, 500m, 1000m, 1500m, 2000m, 3000m)mm, Relative Armor(front, side, rear), Speed(pixel / sec)]
+TANK_DATA = {"T34": [[100, 85, 80, 73, 68, 62, 57, 45], [52, 52, 46], 9.7],
+             "PzIII J": [[60, 55, 50, 57, 47, 28, 21, 15, 5], [50, 30, 45], 8.4],
+             "PzIV H": [[140, 135, 130, 123, 109, 97, 86, 68], [80, 30, 20], 5.55]}
 
-tanks = []  # The list which stores all the tanks
-shells = [] # The list which stores all the shells
+tanks = []   # The list which stores all the tanks
+shells = []  # The list which stores all the shells
+teams = ["RED", "BLUE"]   # The list which stores all the teams
+bunkers = [] # The list which stores all the bunkers
 
 BenchMarkTime = time.time()
+
 
 def cross_product(x1, y1, x2, y2, x3, y3):
     return (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)
 
-def is_intersect(A, B, C, D):
+def is_intersect(A:tuple, B:tuple, C:tuple, D:tuple):
     """
     Determine whether two line segment intersects(AB, CD)
     """
@@ -27,10 +36,36 @@ def is_intersect(A, B, C, D):
     d2 = cross_product(C[0], C[1], D[0], D[1], B[0], B[1])
     d3 = cross_product(A[0], A[1], B[0], B[1], C[0], C[1])
     d4 = cross_product(A[0], A[1], B[0], B[1], D[0], D[1])
-        
+
     if d1 * d2 < 0 and d3 * d4 < 0:
         return True
     return False
+
+def if_point_in_polygon(point:tuple, polygon):
+    """
+    To determine whether a point is in a polygon. True for the point is in the polygon. False for the point is not in it.
+    """
+    Intersection_Count = 0
+    RAY_END = (30000, point[1])
+    vertices = game.canvas.coords(polygon)
+    vertices = [vertices[i:i+2] for i in range(0, len(vertices), 2)]
+    SIDES = []
+    index = 0
+    for vertice in vertices:
+        if index == len(vertices) - 1:
+            SIDES.append([(vertices[0][0],vertices[0][1]), (vertices[index][0], vertices[index][1])])
+        else:
+            SIDES.append([(vertice[0],vertice[1]), (vertices[index+1][0], vertices[index+1][1])])
+        index += 1
+
+    for side in SIDES:
+        if is_intersect(point, RAY_END, side[0], side[1]):
+            Intersection_Count += 1
+    
+    if Intersection_Count % 2 == 0:
+        return False
+    else:
+        return True
 
 def FrequencyGenerator(frequency=1, bias=0.01):
     global BenchMarkTime, IfTriggered
@@ -43,6 +78,14 @@ def FrequencyGenerator(frequency=1, bias=0.01):
         IfTriggered = False
         return False
     
+def TickDynamicAdjustment(tick_time):
+    """
+    Adjust tick sleep time in order to preserve the refresh rate at certain frequency.
+    """
+    global RefreshRate
+    RefreshRate = round(1 / tick_time)
+    game.ChangeFPSMessage(f"FPS: {RefreshRate}")
+
 class Game:
     def __init__(self):
         self.tk = Tk()
@@ -60,6 +103,9 @@ class Game:
         self.debug_message = Label(
             self.canvas, text="Debugging", background="grey")
         self.debug_message.pack(side=RIGHT, anchor="s")
+        self.fps_message = Label(
+            self.canvas, text="", background="grey")
+        self.fps_message.pack(side=RIGHT, anchor="n")
         self.IfReadyFire = False
 
         self.selected_tanks = []
@@ -108,17 +154,17 @@ class Game:
 
     def RotateCounterClockwise(self, event):
         """
-        Rotate the tank counterclockwise for 15 degrees.
+        Rotate the tank counterclockwise for 5 degrees
         """
         for tank in self.selected_tanks:
-            tank.rotate(-1)
+            tank.rotate(-5)
 
     def RotateClockwise(self, event):
         """
-        Rotate the tank clockwise for 15 degrees.
+        Rotate the tank clockwise for 5 degress
         """
         for tank in self.selected_tanks:
-            tank.rotate(1)
+            tank.rotate(5)
 
     def GetRightMousePosition(self, event):
         """
@@ -145,6 +191,9 @@ class Game:
 
     def ChangeDebugMessage(self, message):
         self.debug_message.config(text=message)
+    
+    def ChangeFPSMessage(self, message):
+        self.fps_message.config(text=message)
 
     def run(self):
         """
@@ -161,28 +210,29 @@ class Game:
 
 
 class Tank:
-    def __init__(self, canvas: Canvas, tank_name: str, spawn_point: list = [100, 100]):
+    def __init__(self, canvas: Canvas, tank_name: str, team:str, spawn_point: list = [100, 100]):
         tanks.append(self)
         self.tank_name = tank_name
+        self.team = team  # team name represents its color
+        #self.team = team
         try:
             self.capability = TANK_DATA[self.tank_name]
         except KeyError:
             print(f"[ERROR] Unknown tank type: {self.tank_name}")
             exit()
-        self.speed = self.capability[2]
+        self.speed = self.capability[2] # pix/sec
         self.canvas = canvas
         self.spawn_point = spawn_point
         # self.tank is the rectangle part of the tank. And self.tank_text shows above the rectangle, labels what the tank is.
         self.vertices = [self.spawn_point[0]-8, self.spawn_point[1]-6, self.spawn_point[0]+8, self.spawn_point[1] -
                          6, self.spawn_point[0]+8, self.spawn_point[1]+6, self.spawn_point[0]-8, self.spawn_point[1]+6]
         self.tank = self.canvas.create_polygon(
-            self.vertices, outline="red", fill='white')
+            self.vertices, outline=self.team, fill="white")
         self.tank_text = self.canvas.create_text(
             self.spawn_point[0], self.spawn_point[1]-14, fill="black", text=self.tank_name, font=("Courier", "10"))
         self.direction_label = self.canvas.create_line(
-            self.spawn_point[0], self.spawn_point[1], self.spawn_point[0]+20, self.spawn_point[1], arrow=LAST, fill="black")
+            self.spawn_point[0], self.spawn_point[1], self.spawn_point[0]+20, self.spawn_point[1], arrow=LAST, fill="BLACK")
         self.direction_point = [self.spawn_point[0]+20, self.spawn_point[1]]
-        print(self.canvas.coords(self.tank))
         self.previous_mouse_position = []
         self.destination_x = 0
         self.destination_y = 0
@@ -220,6 +270,7 @@ class Tank:
         0: No destination / Movement Completed
         1: Movement not completed(now moving toward the destination)
         """
+        RealSpeed = self.speed / RefreshRate # Dynamically adjust the speed depending on the refresh rate
         current_x, current_y = self.GetCentreCoordinate()
         if destination_x == current_x and destination_y == current_y:
             return 0  # Already at the destination
@@ -229,8 +280,8 @@ class Tank:
                     (destination_y-current_y)
                 distance = math.sqrt(
                     (destination_x-current_x)**2 + (destination_y-current_y)**2)
-                self.NumberOfMoves = round(distance / self.speed)
-                self.toward_y = self.speed / math.sqrt(CalculationVar**2 + 1)
+                self.NumberOfMoves = round(distance / (RealSpeed))
+                self.toward_y = RealSpeed / math.sqrt(CalculationVar**2 + 1)
                 self.toward_x = abs(CalculationVar * self.toward_y)
                 if destination_y - current_y < 0:
                     self.toward_y = -self.toward_y
@@ -239,11 +290,11 @@ class Tank:
 
             if current_y == destination_y:  # Prevent DividedByZero Error in CalculationVar
                 if destination_x - current_x < 0:
-                    self.toward_x = -self.speed
+                    self.toward_x = -RealSpeed
                 if destination_x - current_x > 0:
-                    self.toward_x = self.speed
+                    self.toward_x = RealSpeed
                 distance = abs(destination_x - current_x)
-                self.NumberOfMoves = round(distance / self.speed)
+                self.NumberOfMoves = round(distance / RealSpeed)
                 self.toward_y = 0
 
             self.previous_destination_x = destination_x
@@ -266,15 +317,14 @@ class Tank:
                                  self.toward_x, self.toward_y)
                 self.direction_point = [
                     self.direction_point[0]+self.toward_x, self.direction_point[1]+self.toward_y]
-                self.canvas.update()
 
                 self.NumberOfMoves -= 1
                 self.status = "MOVING"
                 return 1
 
-    def rotate(self, rotation_times: int):
+    def rotate(self, rotation_angle: float):
         """
-        Rotation_Times: times of rotating 15 degrees. Positive for counterclockwise, Negative for clockwise
+        Rotation_Times: Positive for counterclockwise, Negative for clockwise
         """
         vertices = self.canvas.coords(self.tank)
         vertices = [vertices[i:i+2] for i in range(0, len(vertices), 2)]
@@ -283,7 +333,7 @@ class Tank:
         x = (m-a)*cosθ - (n-b)*sinθ + a
         y = (m-a)*sinθ + (n-b)*cosθ + b
         """
-        angle = math.radians(rotation_times*15)
+        angle = math.radians(rotation_angle)
         cos = math.cos(angle)
         sin = math.sin(angle)
         new_vertices = []
@@ -304,9 +354,9 @@ class Tank:
         self.direction_label = self.canvas.create_line(
             centre_x, centre_y, direction_x, direction_y, arrow=LAST, fill="black")
         self.tank = self.canvas.create_polygon(
-            new_vertices, outline="red", fill='white')
+            new_vertices, outline=self.team, fill=self.team)
 
-    def GetHit(self, shooter: str, distance:float, part: int):
+    def GetHit(self, shooter: str, distance: float, part: int):
         """
         Input: The tank name of the shooter, distance from the shooter, part hit by the shooter.
         Output: Whether the tank is destroyed.
@@ -331,11 +381,13 @@ class Tank:
             HigherDistanceChoice-distance)) / (HigherDistanceChoice-LowerDistanceChoice)
         print(armor, LowerDistanceChoice, distance, HigherDistanceChoice,
               LowerPenetration, HigherPenetration, RealPenetration)
+        
         if RealPenetration - armor > -17:
             Destroyed_Probability = 1 / \
                 ((500 / ((RealPenetration-armor+17)**2))**2 + 1)
         else:
             Destroyed_Probability = 0
+        game.ChangeMessageBoxText(f"Armor: {armor}\nPenetration: {RealPenetration}\nDestruction Rate: {round(Destroyed_Probability,2)}")
         # For further calculation formula details, please see notes.txt
         print(Destroyed_Probability)
         IfDestroyed = random.choices(
@@ -345,6 +397,10 @@ class Tank:
             self.status = "DESTROYED"
 
     def shoot(self, target):
+        if target.team == self.team: 
+            game.ChangeMessageBoxText("NO Friendly fire!!")
+            return
+        playsound3.playsound("Cannon-firing.mp3", block=False)
         target_x, target_y = self.GetCentreCoordinate(target=target)
         # Which is the shooter's coordinate(self is the shooter)
         current_x, current_y = self.GetCentreCoordinate(target=self)
@@ -362,32 +418,36 @@ class Tank:
         if self.IfSelected == False:
             self.canvas.itemconfig(self.tank, fill="#ffffff")
         if self.IfSelected == True:
-            self.canvas.itemconfig(self.tank, fill="#ff0000")
+            self.canvas.itemconfig(self.tank, fill=self.team)
         if self.status == "IDLE":
             pass
         if self.status == "MOVING":
             self.TowardDestination(self.destination_x, self.destination_y)
         if self.status == "DESTROYED":
+            playsound3.playsound("Explosion.mp3", block=False)
             self.canvas.delete(self.tank)
             tanks.remove(self)
 
+
 class Shell:
-    def __init__(self, canvas:Canvas, shooter:Tank, target:Tank, speed=10):
+    def __init__(self, canvas: Canvas, shooter: Tank, target: Tank, speed=10):
         self.canvas = canvas
         self.shooter = shooter
         self.target = target
         self.speed = speed
         self.target_x, self.target_y = self.target.GetCentreCoordinate()
         self.shooter_x, self.shooter_y = self.shooter.GetCentreCoordinate()
-        self.shell_id = self.canvas.create_oval(self.shooter_x-3,self.shooter_y-3,self.shooter_x+3,self.shooter_y+3, fill="grey")
+        self.shell_id = self.canvas.create_oval(
+            self.shooter_x-3, self.shooter_y-3, self.shooter_x+3, self.shooter_y+3, fill="grey")
         self.shell_x = self.shooter_x
         self.shell_y = self.shooter_y
         self.toward_x = 0
         self.toward_y = 0
-        self.distance = math.sqrt((self.shooter_x-self.target_x)**2 + (self.shooter_y-self.target_y)**2)
+        self.distance = math.sqrt(
+            (self.shooter_x-self.target_x)**2 + (self.shooter_y-self.target_y)**2)
         self.shoot()
         shells.append(self)
-        self.previous_coordinate = (self.shell_x,self.shell_y)
+        self.previous_coordinate = (self.shell_x, self.shell_y)
 
     def shoot(self):
         """
@@ -395,7 +455,8 @@ class Shell:
         """
         destination_x, destination_y = self.target_x, self.target_y
         if self.shooter_y != destination_y:
-            CalculationVar = (destination_x-self.shooter_x) / (destination_y-self.shooter_y)
+            CalculationVar = (destination_x-self.shooter_x) / \
+                (destination_y-self.shooter_y)
             self.toward_y = self.speed / math.sqrt(CalculationVar**2 + 1)
             self.toward_x = abs(CalculationVar * self.toward_y)
             if destination_y - self.shooter_y < 0:
@@ -421,70 +482,101 @@ class Shell:
         self.shell_y += toward_y
         self.canvas.move(self.shell_id, toward_x, toward_y)
         for side in IndexList:
-                index = IndexList.index(side)
-                x1, y1, x2, y2 = target_vertices[side[0]], target_vertices[side[1]], target_vertices[side[2]], target_vertices[side[3]]
-                C = (x1,y1)
-                D = (x2,y2)
-                A = self.previous_coordinate
-                B = (self.shell_x, self.shell_y)
-                if is_intersect(A,B,C,D) == True:
-                            if index == 3:
-                                game.ChangeDebugMessage("HIT REAR")
-                                self.target.GetHit(shooter=self.shooter.tank_name, part=2, distance=self.distance)
-                                shells.remove(self)
-                                self.canvas.delete(self.shell_id)
-                                del(self)
-                                return 2
-                            if index == 2:
-                                game.ChangeDebugMessage("HIT SIDE")
-                                # 0 for front, 1 for side, 2 for rear
-                                self.target.GetHit(shooter=self.shooter.tank_name, part=1, distance=self.distance)
-                                shells.remove(self)
-                                self.canvas.delete(self.shell_id)
-                                del(self)
-                                return 1
-                            if index == 1:
-                                game.ChangeDebugMessage("HIT FRONT")
-                                self.target.GetHit(shooter=self.shooter.tank_name, part=0, distance=self.distance)
-                                shells.remove(self)
-                                self.canvas.delete(self.shell_id)
-                                del(self)
-                                return 0
-                            if index == 0:
-                                game.ChangeDebugMessage("HIT SIDE")
-                                # 0 for front, 1 for side, 2 for rear
-                                self.target.GetHit(shooter=self.shooter.tank_name, part=1, distance=self.distance)
-                                shells.remove(self)
-                                self.canvas.delete(self.shell_id)
-                                del(self)
-                                return 1
+
+            if self.shell_x <= 0 or self.shell_x >= 1512 or self.shell_y <= 0 or self.shell_y >= 982 or self.target.status == "DESTROYED":
+                print("NOT HIT")
+                game.ChangeDebugMessage("NOT HIT")
+                shells.remove(self)
+                del (self)
+                return -1   # Not Hit
+            index = IndexList.index(side)
+            x1, y1, x2, y2 = target_vertices[side[0]], target_vertices[side[1]
+                                                                       ], target_vertices[side[2]], target_vertices[side[3]]
+            C = (x1, y1)
+            D = (x2, y2)
+            A = self.previous_coordinate
+            B = (self.shell_x, self.shell_y)
+            if is_intersect(A, B, C, D) == True:
+                if index == 3:
+                    game.ChangeDebugMessage("HIT REAR")
+                    self.target.GetHit(
+                        shooter=self.shooter.tank_name, part=2, distance=self.distance)
+                    shells.remove(self)
+                    self.canvas.delete(self.shell_id)
+                    del (self)
+                    return 2
+                if index == 2:
+                    game.ChangeDebugMessage("HIT SIDE")
+                    # 0 for front, 1 for side, 2 for rear
+                    self.target.GetHit(
+                        shooter=self.shooter.tank_name, part=1, distance=self.distance)
+                    shells.remove(self)
+                    self.canvas.delete(self.shell_id)
+                    del (self)
+                    return 1
+                if index == 1:
+                    game.ChangeDebugMessage("HIT FRONT")
+                    self.target.GetHit(
+                        shooter=self.shooter.tank_name, part=0, distance=self.distance)
+                    shells.remove(self)
+                    self.canvas.delete(self.shell_id)
+                    del (self)
+                    return 0
+                if index == 0:
+                    game.ChangeDebugMessage("HIT SIDE")
+                    # 0 for front, 1 for side, 2 for rear
+                    self.target.GetHit(
+                        shooter=self.shooter.tank_name, part=1, distance=self.distance)
+                    shells.remove(self)
+                    self.canvas.delete(self.shell_id)
+                    del (self)
+                    return 1
+                
+        for bunker in bunkers: # Hit the bunker
+            if if_point_in_polygon((self.shell_x,self.shell_y), bunker.bunker):
+                shells.remove(self)
+                self.canvas.delete(self.shell_id)
+                del(self)
+                return "HIT the bunker"
         self.previous_coordinate = (self.shell_x, self.shell_y)
 
-        #print(f"CYCLE{self.shell_x, self.shell_y}")
-        if self.shell_x <= 0 or self.shell_x >= 1512 or self.shell_y <= 0 or self.shell_y >= 982:
-            print("NOT HIT")
-            game.ChangeDebugMessage("NOT HIT")
-            shells.remove(self)
-            del(self)
-            return -1   # Not Hit
+class Bunker:
+    def __init__(self, canvas:Canvas, vertices:list):
+        global bunkers
+        bunkers.append(self)
+        self.canvas = canvas
+        self.vertices = vertices
+        self.bunker = self.canvas.create_polygon(vertices, fill="grey")
+
 
 game = Game()
-tank1 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50])
-tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[100, 80])
-tank3 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[130, 200])
+tank1 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
+tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
+tank3 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[50, 550], team="RED")
+tank4 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 600], team="RED")
+tank5 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
+tank6 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
+tank7 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 600], team="BLUE")
+tank8 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[1300, 700], team="BLUE")
+
+bunker1 = Bunker(canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
+bunker2 = Bunker(canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
+bunker3 = Bunker(canvas=game.canvas, vertices=[800,900,600,500,700,400,800,450])
+
 
 print(game.canvas_width, game.canvas_height)
-IfTriggered = False  # Triggered by function "FrequencyGenerator"
-Tick = False
+
+tick_time = 0
 
 while True:
     if GAMING == True:
+        T1 = time.time()
         Tick = True
         game.run()
-        game.tk.update_idletasks()
         game.tk.update()
         Tick = False
-        time.sleep(0.01)  # 100 fps
+        T2 = time.time()
+        TickDynamicAdjustment(T2-T1)
     if GAMING == False:
         break
 

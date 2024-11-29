@@ -1,6 +1,7 @@
 1 pixel = 1 metres
 1 tick = 0.01s
-PixelSpeed(pixel / tick) = RealSpeed(km/h) * 1/360
+PixelSpeed(pixel / sec) = RealSpeed(km/h) * 5/18
+ShellSpeed(pixel / tick) = 10
 
 Tank Aspect Ratio: 3/4 (16pix / 12pix)
 Relative Armor Thickness: Real Armor Thickness / cos(SlopeAngle)
