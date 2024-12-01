@@ -4,6 +4,7 @@ import random
 import time
 import sys
 import playsound3
+from Tank_Data import TANK_DATA # Import the basic data of the tanks.
 
 GAMING = True
 RefreshRate = 100 
@@ -11,11 +12,6 @@ RefreshRate = 100
 The RefreshRate is dynamically adjusted, depending on the performance of the console.
 The term "tick" means 100/s, "tick" is not associated with the RefreshRate.
 """
-
-# "Tank Name": [Attack(0m, 100m, 300m, 500m, 1000m, 1500m, 2000m, 3000m)mm, Relative Armor(front, side, rear), Speed(pixel / sec)]
-TANK_DATA = {"T34": [[100, 85, 80, 73, 68, 62, 57, 45], [52, 52, 46], 9.7],
-             "PzIII J": [[60, 55, 50, 57, 47, 28, 21, 15, 5], [50, 30, 45], 8.4],
-             "PzIV H": [[140, 135, 130, 123, 109, 97, 86, 68], [80, 30, 20], 5.55]}
 
 tanks = []   # The list which stores all the tanks
 shells = []  # The list which stores all the shells
@@ -172,6 +168,14 @@ class Game:
         """
         mouse_x = event.x
         mouse_y = event.y
+        # Determine whether the destination is inside the bunker(which is unreachable)
+        for bunker in bunkers:
+            if if_point_in_polygon((mouse_x,mouse_y), bunker.bunker) == True:
+                error_message = Label(self.canvas, text="Unreachable Destination!", font=("Courier",12), background="red")
+                error_message.place(x=mouse_x-40, y=mouse_y-3)
+                self.tk.after(1000, error_message.destroy)
+                playsound3.playsound("./mp3/Error.mp3", block=False)
+                return
         for tank in self.selected_tanks:
             tank.destination_x = mouse_x
             tank.destination_y = mouse_y
@@ -274,6 +278,7 @@ class Tank:
         current_x, current_y = self.GetCentreCoordinate()
         if destination_x == current_x and destination_y == current_y:
             return 0  # Already at the destination
+
         if destination_x != self.previous_destination_x and destination_y != self.previous_destination_y:
             if current_y != destination_y:
                 CalculationVar = (destination_x-current_x) / \
@@ -299,6 +304,13 @@ class Tank:
 
             self.previous_destination_x = destination_x
             self.previous_destination_y = destination_y
+
+        # Determine whether the next step will touch the bunker. If it will, then stop the moving process
+        for bunker in bunkers:
+            if if_point_in_polygon((current_x+self.toward_x, current_y+self.toward_y), bunker.bunker):
+                self.status = "IDLE"
+                self.NumberOfMoves = -1
+                return 0
 
         if destination_x == -1 or destination_y == -1 or self.NumberOfMoves == 0:  # No destination
             self.status = "IDLE"
@@ -400,7 +412,7 @@ class Tank:
         if target.team == self.team: 
             game.ChangeMessageBoxText("NO Friendly fire!!")
             return
-        playsound3.playsound("Cannon-firing.mp3", block=False)
+        playsound3.playsound("./mp3/Cannon-firing.mp3", block=False)
         target_x, target_y = self.GetCentreCoordinate(target=target)
         # Which is the shooter's coordinate(self is the shooter)
         current_x, current_y = self.GetCentreCoordinate(target=self)
@@ -424,10 +436,9 @@ class Tank:
         if self.status == "MOVING":
             self.TowardDestination(self.destination_x, self.destination_y)
         if self.status == "DESTROYED":
-            playsound3.playsound("Explosion.mp3", block=False)
+            playsound3.playsound("./mp3/Explosion.mp3", block=False)
             self.canvas.delete(self.tank)
             tanks.remove(self)
-
 
 class Shell:
     def __init__(self, canvas: Canvas, shooter: Tank, target: Tank, speed=10):
@@ -552,12 +563,12 @@ class Bunker:
 game = Game()
 tank1 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
 tank2 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
-tank3 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[50, 550], team="RED")
-tank4 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 600], team="RED")
+tank3 = Tank(canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
+tank4 = Tank(canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
 tank5 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
 tank6 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
-tank7 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 600], team="BLUE")
-tank8 = Tank(canvas=game.canvas, tank_name="T34", spawn_point=[1300, 700], team="BLUE")
+tank7 = Tank(canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
+tank8 = Tank(canvas=game.canvas, tank_name="T34-76", spawn_point=[1300, 700], team="BLUE")
 
 bunker1 = Bunker(canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
