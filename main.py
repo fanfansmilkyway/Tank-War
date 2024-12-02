@@ -20,7 +20,6 @@ bunkers = [] # The list which stores all the bunkers
 
 BenchMarkTime = time.time()
 
-
 def cross_product(x1, y1, x2, y2, x3, y3):
     return (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)
 
@@ -76,7 +75,7 @@ def FrequencyGenerator(frequency=1, bias=0.01):
     
 def TickDynamicAdjustment(tick_time):
     """
-    Adjust tick sleep time in order to preserve the refresh rate at certain frequency.
+    Calculate the Refresh Rate.
     """
     global RefreshRate
     RefreshRate = round(1 / tick_time)
@@ -225,6 +224,7 @@ class Tank:
             print(f"[ERROR] Unknown tank type: {self.tank_name}")
             exit()
         self.speed = self.capability[2] # pix/sec
+        self.reloading_speed = self.capability[3]
         self.canvas = canvas
         self.spawn_point = spawn_point
         # self.tank is the rectangle part of the tank. And self.tank_text shows above the rectangle, labels what the tank is.
@@ -236,6 +236,8 @@ class Tank:
             self.spawn_point[0], self.spawn_point[1]-14, fill="black", text=self.tank_name, font=("Courier", "10"))
         self.direction_label = self.canvas.create_line(
             self.spawn_point[0], self.spawn_point[1], self.spawn_point[0]+20, self.spawn_point[1], arrow=LAST, fill="BLACK")
+        self.reloading_indicator = self.canvas.create_text(
+            self.spawn_point[0], self.spawn_point[1]-20, fill="green", text="*", font=("Courier", "18"))
         self.direction_point = [self.spawn_point[0]+20, self.spawn_point[1]]
         self.previous_mouse_position = []
         self.destination_x = 0
@@ -249,6 +251,7 @@ class Tank:
 
         self.status = "IDLE"  # Status are: "IDLE", "MOVING", "DESTROYED"
         self.IfSelected = False
+        self.IfReloaded = True
 
     def GetCentreCoordinate(self, target=None):
         """
@@ -326,6 +329,8 @@ class Tank:
                 self.canvas.move(self.tank, self.toward_x, self.toward_y)
                 self.canvas.move(self.tank_text, self.toward_x, self.toward_y)
                 self.canvas.move(self.direction_label,
+                                 self.toward_x, self.toward_y)
+                self.canvas.move(self.reloading_indicator,
                                  self.toward_x, self.toward_y)
                 self.direction_point = [
                     self.direction_point[0]+self.toward_x, self.direction_point[1]+self.toward_y]
@@ -412,6 +417,9 @@ class Tank:
         if target.team == self.team: 
             game.ChangeMessageBoxText("NO Friendly fire!!")
             return
+        if self.IfReloaded == False:
+            playsound3.playsound("./mp3/Reloading_hasn't_completed_yet.mp3", block=False)
+            return
         playsound3.playsound("./mp3/Cannon-firing.mp3", block=False)
         target_x, target_y = self.GetCentreCoordinate(target=target)
         # Which is the shooter's coordinate(self is the shooter)
@@ -423,8 +431,15 @@ class Tank:
             current_x, current_y, target_x, target_y, arrow=LAST, fill='black')
         DistanceLabel = self.canvas.create_text(
             (current_x+target_x)/2+8, (current_y+target_y)/2, text=f"{round(distance)}", fill="black")
+        self.IfReloaded = False
+        self.canvas.itemconfig(self.reloading_indicator, fill="red")
         game.tk.after(300, self.canvas.delete, ShootArrow)
         game.tk.after(300, self.canvas.delete, DistanceLabel)
+        game.tk.after(round(self.reloading_speed*1000), self.reload)
+    
+    def reload(self):
+        self.IfReloaded = True
+        self.canvas.itemconfig(self.reloading_indicator, fill="green")
 
     def run(self):
         if self.IfSelected == False:
@@ -441,7 +456,7 @@ class Tank:
             tanks.remove(self)
 
 class Shell:
-    def __init__(self, canvas: Canvas, shooter: Tank, target: Tank, speed=10):
+    def __init__(self, canvas: Canvas, shooter: Tank, target: Tank, speed=1000):
         self.canvas = canvas
         self.shooter = shooter
         self.target = target
@@ -464,11 +479,12 @@ class Shell:
         """
         Calculate the route of the shell.
         """
+        RealSpeed = self.speed / RefreshRate
         destination_x, destination_y = self.target_x, self.target_y
         if self.shooter_y != destination_y:
             CalculationVar = (destination_x-self.shooter_x) / \
                 (destination_y-self.shooter_y)
-            self.toward_y = self.speed / math.sqrt(CalculationVar**2 + 1)
+            self.toward_y = RealSpeed / math.sqrt(CalculationVar**2 + 1)
             self.toward_x = abs(CalculationVar * self.toward_y)
             if destination_y - self.shooter_y < 0:
                 self.toward_y = -self.toward_y
@@ -477,9 +493,9 @@ class Shell:
 
         if self.shooter_y == destination_y:  # Prevent DividedByZero Error in CalculationVar
             if destination_x - self.shooter_x < 0:
-                self.toward_x = -self.speed
+                self.toward_x = -RealSpeed
             if destination_x - self.shooter_y > 0:
-                self.toward_x = self.speed
+                self.toward_x = RealSpeed
             self.toward_y = 0
 
     def travel(self):
@@ -568,7 +584,7 @@ tank4 = Tank(canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], 
 tank5 = Tank(canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
 tank6 = Tank(canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
 tank7 = Tank(canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
-tank8 = Tank(canvas=game.canvas, tank_name="T34-76", spawn_point=[1300, 700], team="BLUE")
+tank8 = Tank(canvas=game.canvas, tank_name="BT-7", spawn_point=[1300, 700], team="BLUE")
 
 bunker1 = Bunker(canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])

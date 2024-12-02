@@ -1,7 +1,7 @@
 1 pixel = 1 metres
 1 tick = 0.01s
 PixelSpeed(pixel / sec) = RealSpeed(km/h) * 5/18
-ShellSpeed(pixel / tick) = 10
+ShellSpeed(pixel / sec) = 1300
 
 Tank Aspect Ratio: 3/4 (16pix / 12pix)
 Relative Armor Thickness: Real Armor Thickness / cos(SlopeAngle)
@@ -42,7 +42,7 @@ Notes: Because we can rotate the tank, so the tank may be not horizontal or vert
 
 Rotation:
 Point P(m,n) rotates around point A(a,b) for θ(theta) degress, and get point Q(x,y)
-*(m,n,a,n,θ are known, x,y are unknown and need to get the value of them)
+*(m,n,a,n,θ are known, x,y are unknown and need to get the values of them)
 
 !: The tkinter coordinate system is different from the normal one. Tkinter's y-axis is the reversed normal y-axis!
 
