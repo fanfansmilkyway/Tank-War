@@ -4,7 +4,7 @@ import random
 import time
 import sys
 import playsound3
-from Tank_Data import TANK_DATA # Import the basic data of the tanks.
+from Tank_Data import TANK_CAPABILITY # Import the basic data of the tanks.
 
 GAMING = True
 RefreshRate = 100 
@@ -23,7 +23,7 @@ BenchMarkTime = time.time()
 def cross_product(x1, y1, x2, y2, x3, y3):
     return (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)
 
-def is_intersect(A:tuple, B:tuple, C:tuple, D:tuple):
+def if_intersect(A:tuple, B:tuple, C:tuple, D:tuple):
     """
     Determine whether two line segment intersects(AB, CD)
     """
@@ -54,7 +54,7 @@ def if_point_in_polygon(point:tuple, polygon):
         index += 1
 
     for side in SIDES:
-        if is_intersect(point, RAY_END, side[0], side[1]):
+        if if_intersect(point, RAY_END, side[0], side[1]):
             Intersection_Count += 1
     
     if Intersection_Count % 2 == 0:
@@ -73,7 +73,7 @@ def FrequencyGenerator(frequency=1, bias=0.01):
         IfTriggered = False
         return False
     
-def TickDynamicAdjustment(tick_time):
+def CalculateRefreshRate(tick_time):
     """
     Calculate the Refresh Rate.
     """
@@ -83,6 +83,7 @@ def TickDynamicAdjustment(tick_time):
 
 class Game:
     def __init__(self):
+        # Initialize the canvas
         self.tk = Tk()
         self.tk.title("Tank War")
         self.canvas = Canvas(self.tk, background="white")
@@ -92,6 +93,7 @@ class Game:
         self.canvas_width = self.canvas.winfo_screenwidth()
         self.canvas_height = self.canvas.winfo_screenheight()
         self.tk.protocol("WM_DELETE_WINDOW", self.end_game)
+
         self.message_box = Label(
             self.canvas, text="Attack...", background="grey")
         self.message_box.pack(side=LEFT, anchor="s")
@@ -101,15 +103,14 @@ class Game:
         self.fps_message = Label(
             self.canvas, text="", background="grey")
         self.fps_message.pack(side=RIGHT, anchor="n")
-        self.IfReadyFire = False
 
+        self.IfReadyFire = False
+ 
         self.selected_tanks = []
 
         self.canvas.bind_all("<KeyPress-a>", self.ReadyFire)
-        self.canvas.bind_all(
-            "<ButtonPress-1>", self.GetLeftMousePosition)  # Left Click
-        self.canvas.bind_all(
-            "<ButtonPress-2>", self.GetRightMousePosition)  # Right Click
+        self.canvas.bind_all("<ButtonPress-1>", self.GetLeftMousePosition)  # Left Click
+        self.canvas.bind_all("<ButtonPress-2>", self.GetRightMousePosition)  # Right Click
         self.canvas.bind_all("<Escape>", self.CancelAll)
         self.canvas.bind_all("<KeyPress-e>", self.RotateClockwise)
         self.canvas.bind_all("<KeyPress-q>", self.RotateCounterClockwise)
@@ -198,7 +199,7 @@ class Game:
     def ChangeFPSMessage(self, message):
         self.fps_message.config(text=message)
 
-    def run(self):
+    def refresh(self):
         """
         Game mainloop
         """
@@ -206,6 +207,7 @@ class Game:
             tank.run()
         for shell in shells:
             shell.travel()
+        game.tk.update()
 
     def end_game(self):
         global GAMING
@@ -219,7 +221,7 @@ class Tank:
         self.team = team  # team name represents its color
         #self.team = team
         try:
-            self.capability = TANK_DATA[self.tank_name]
+            self.capability = TANK_CAPABILITY[self.tank_name]
         except KeyError:
             print(f"[ERROR] Unknown tank type: {self.tank_name}")
             exit()
@@ -378,7 +380,8 @@ class Tank:
         Input: The tank name of the shooter, distance from the shooter, part hit by the shooter.
         Output: Whether the tank is destroyed.
         """
-        armor = TANK_DATA[self.tank_name][1][part]  # Part: 0 for front, 1 for side, 2 for rear
+        armor = TANK_CAPABILITY[self.tank_name][1][part]  # Part: 0 for front, 1 for side, 2 for rear
+        # Calculate the real penetration
         DistanceChoices = [0, 100, 300, 500, 1000, 1500, 2000]
         HigherDistances = [0, 100, 300, 500, 1000, 1500, 2000, 3000]
         HigherDistanceChoice = 3000
@@ -387,29 +390,25 @@ class Tank:
                 HigherDistanceChoice = d
                 break
         HigherDistanceChoiceIndex = HigherDistances.index(HigherDistanceChoice)
-        HigherPenetration = TANK_DATA[shooter][0][HigherDistanceChoiceIndex]
+        HigherPenetration = TANK_CAPABILITY[shooter][0][HigherDistanceChoiceIndex]
         if HigherDistanceChoiceIndex != 0:
             LowerDistanceChoice = DistanceChoices[HigherDistanceChoiceIndex-1]
-            LowerPenetration = TANK_DATA[shooter][0][HigherDistanceChoiceIndex-1]
+            LowerPenetration = TANK_CAPABILITY[shooter][0][HigherDistanceChoiceIndex-1]
         else:
             LowerDistanceChoice = 0
             LowerPenetration = HigherPenetration - 1
-        RealPenetration = (HigherPenetration*(distance-LowerDistanceChoice) + LowerPenetration*(
-            HigherDistanceChoice-distance)) / (HigherDistanceChoice-LowerDistanceChoice)
-        print(armor, LowerDistanceChoice, distance, HigherDistanceChoice,
-              LowerPenetration, HigherPenetration, RealPenetration)
-        
+        RealPenetration = (HigherPenetration*(distance-LowerDistanceChoice) + LowerPenetration*(HigherDistanceChoice-distance)) / (HigherDistanceChoice-LowerDistanceChoice)
+        # Calculate the detroyed rate
         if RealPenetration - armor > -17:
-            Destroyed_Probability = 1 / \
-                ((500 / ((RealPenetration-armor+17)**2))**2 + 1)
+            # For further calculation formula details, please see notes.txt
+            Destroyed_Probability = 1 / ((500 / ((RealPenetration-armor+17)**2))**2 + 1)
         else:
             Destroyed_Probability = 0
         game.ChangeMessageBoxText(f"Armor: {armor}\nPenetration: {RealPenetration}\nDestruction Rate: {round(Destroyed_Probability,2)}")
-        # For further calculation formula details, please see notes.txt
         print(Destroyed_Probability)
+        
         IfDestroyed = random.choices(
             [True, False], [Destroyed_Probability, 1-Destroyed_Probability])
-        # game.ChangeMessageBoxText(f"{Destroyed_Probability}, {IfDestroyed}")
         if IfDestroyed == [True]:
             self.status = "DESTROYED"
 
@@ -420,19 +419,21 @@ class Tank:
         if self.IfReloaded == False:
             playsound3.playsound("./mp3/Reloading_hasn't_completed_yet.mp3", block=False)
             return
+        
         playsound3.playsound("./mp3/Cannon-firing.mp3", block=False)
+        self.IfReloaded = False
+        self.canvas.itemconfig(self.reloading_indicator, fill="red")
+
         target_x, target_y = self.GetCentreCoordinate(target=target)
-        # Which is the shooter's coordinate(self is the shooter)
         current_x, current_y = self.GetCentreCoordinate(target=self)
         distance = math.sqrt((target_x-current_x)**2 + (target_y-current_y)**2)
-        Shell(canvas=game.canvas, shooter=self, target=target)
+        Shell(canvas=game.canvas, shooter=self, target=target) # Create the shell
 
         ShootArrow = self.canvas.create_line(
             current_x, current_y, target_x, target_y, arrow=LAST, fill='black')
         DistanceLabel = self.canvas.create_text(
             (current_x+target_x)/2+8, (current_y+target_y)/2, text=f"{round(distance)}", fill="black")
-        self.IfReloaded = False
-        self.canvas.itemconfig(self.reloading_indicator, fill="red")
+        
         game.tk.after(300, self.canvas.delete, ShootArrow)
         game.tk.after(300, self.canvas.delete, DistanceLabel)
         game.tk.after(round(self.reloading_speed*1000), self.reload)
@@ -471,11 +472,11 @@ class Shell:
         self.toward_y = 0
         self.distance = math.sqrt(
             (self.shooter_x-self.target_x)**2 + (self.shooter_y-self.target_y)**2)
-        self.shoot()
+        self.TowardTarget()
         shells.append(self)
         self.previous_coordinate = (self.shell_x, self.shell_y)
 
-    def shoot(self):
+    def TowardTarget(self):
         """
         Calculate the route of the shell.
         """
@@ -501,6 +502,7 @@ class Shell:
     def travel(self):
         """
         The shell travels towards the target, and determine which side of the target tank it hits.
+        Side hit: 0 for front, 1 for side, 2 for rear
         """
         target_vertices = self.canvas.coords(self.target.tank)
         IndexList = [[0, 1, 2, 3], [2, 3, 4, 5], [4, 5, 6, 7], [6, 7, 0, 1]]
@@ -514,7 +516,6 @@ class Shell:
                 print("NOT HIT")
                 game.ChangeDebugMessage("NOT HIT")
                 shells.remove(self)
-                del (self)
                 return -1   # Not Hit
             index = IndexList.index(side)
             x1, y1, x2, y2 = target_vertices[side[0]], target_vertices[side[1]
@@ -523,23 +524,21 @@ class Shell:
             D = (x2, y2)
             A = self.previous_coordinate
             B = (self.shell_x, self.shell_y)
-            if is_intersect(A, B, C, D) == True:
+            if if_intersect(A, B, C, D) == True:
+                # 0 for front, 1 for side, 2 for rear
                 if index == 3:
                     game.ChangeDebugMessage("HIT REAR")
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=2, distance=self.distance)
                     shells.remove(self)
                     self.canvas.delete(self.shell_id)
-                    del (self)
                     return 2
                 if index == 2:
                     game.ChangeDebugMessage("HIT SIDE")
-                    # 0 for front, 1 for side, 2 for rear
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=1, distance=self.distance)
                     shells.remove(self)
                     self.canvas.delete(self.shell_id)
-                    del (self)
                     return 1
                 if index == 1:
                     game.ChangeDebugMessage("HIT FRONT")
@@ -547,16 +546,13 @@ class Shell:
                         shooter=self.shooter.tank_name, part=0, distance=self.distance)
                     shells.remove(self)
                     self.canvas.delete(self.shell_id)
-                    del (self)
                     return 0
                 if index == 0:
                     game.ChangeDebugMessage("HIT SIDE")
-                    # 0 for front, 1 for side, 2 for rear
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=1, distance=self.distance)
                     shells.remove(self)
                     self.canvas.delete(self.shell_id)
-                    del (self)
                     return 1
                 
         for bunker in bunkers: # Hit the bunker
@@ -565,6 +561,7 @@ class Shell:
                 self.canvas.delete(self.shell_id)
                 del(self)
                 return "HIT the bunker"
+            
         self.previous_coordinate = (self.shell_x, self.shell_y)
 
 class Bunker:
@@ -574,6 +571,7 @@ class Bunker:
         self.canvas = canvas
         self.vertices = vertices
         self.bunker = self.canvas.create_polygon(vertices, fill="grey")
+
 
 
 game = Game()
@@ -590,20 +588,15 @@ bunker1 = Bunker(canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
 bunker3 = Bunker(canvas=game.canvas, vertices=[800,900,600,500,700,400,800,450])
 
-
+# Print canvas's width and height
 print(game.canvas_width, game.canvas_height)
-
-tick_time = 0
 
 while True:
     if GAMING == True:
         T1 = time.time()
-        Tick = True
-        game.run()
-        game.tk.update()
-        Tick = False
+        game.refresh()
         T2 = time.time()
-        TickDynamicAdjustment(T2-T1)
+        CalculateRefreshRate(T2-T1)
     if GAMING == False:
         break
 
