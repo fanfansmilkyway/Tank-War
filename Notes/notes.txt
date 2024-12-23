@@ -1,3 +1,8 @@
+!: This text file is specially made to store notes about CALCULATIONS and CONSTANTS.
+
++------------------------------------------------+
+Constants:
+
 1 pixel = 1 metres
 1 tick = 0.01s
 PixelSpeed(pixel / sec) = RealSpeed(km/h) * 5/18

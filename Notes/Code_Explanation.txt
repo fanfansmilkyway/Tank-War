@@ -1,0 +1,19 @@
+!: This text file is specially to make brief explanation at the current code to let the programmers comprehend better.
+
+File Structure:
+TANK-WAR
+|- main.py   --> The main program
+|- Tank_Data.py  --> To store tanks' capability, decriptions and so on.
+|- global_functions.py  --> Some universal and general functions are defined here.(Be used everywhere in the whole project)
+|- global_varibales.py  --> The place to let seperate programs convey global variables here.
+|
+|- /classes  --> Define classes(Each filename corresponds to its defined class)
+|   |-Bunker.py
+|   |-Shell.py
+|   |-Tank.py
+|
+|- /mp3      --> To store some .mp3 files
+|   |-???.mp3
+|
+|- /Notes    --> To store some notes, as nonsense as this one
+|   |-???.txt
