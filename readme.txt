@@ -1,1 +1,1 @@
-Tank Game
+Tank Commander Game

@@ -2,15 +2,14 @@ from tkinter import *
 import random
 import math
 from Tank_Data import TANK_CAPABILITY # Import the basic data of the tanks.
-import global_variables as g_val
 from global_functions import *
 from classes.Shell import Shell
 import playsound3
 
 class Tank:
     def __init__(self, game, canvas: Canvas, tank_name: str, team:str, spawn_point: list = [100, 100]):
-        g_val.tanks.append(self)
         self.game = game
+        self.game.tanks.append(self)
         self.tank_name = tank_name
         self.team = team  # team name represents its color
         #self.team = team
@@ -73,7 +72,7 @@ class Tank:
         0: No destination / Movement Completed
         1: Movement not completed(now moving toward the destination)
         """
-        RealSpeed = self.speed / g_val.RefreshRate # Dynamically adjust the speed depending on the refresh rate
+        RealSpeed = self.speed / self.game.RefreshRate # Dynamically adjust the speed depending on the refresh rate
         current_x, current_y = self.GetCentreCoordinate()
         if destination_x == current_x and destination_y == current_y:
             return 0  # Already at the destination
@@ -105,7 +104,7 @@ class Tank:
             self.previous_destination_y = destination_y
 
         # Determine whether the next step will touch the bunker. If it will, then stop the moving process
-        for bunker in g_val.bunkers:
+        for bunker in self.game.bunkers:
             if if_point_in_polygon((current_x+self.toward_x, current_y+self.toward_y), bunker.vertices):
                 self.status = "IDLE"
                 self.NumberOfMoves = -1
@@ -248,4 +247,4 @@ class Tank:
         if self.status == "DESTROYED":
             playsound3.playsound("./mp3/Explosion.mp3", block=False)
             self.canvas.delete(self.tank)
-            g_val.tanks.remove(self)
+            self.game.tanks.remove(self)

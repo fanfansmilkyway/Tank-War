@@ -4,13 +4,7 @@ import sys
 import playsound3
 from classes.Tank import Tank
 from classes.Bunker import Bunker
-import global_variables as g_val
 from global_functions import *
-
-"""
-The RefreshRate is dynamically adjusted, depending on the performance of the console.
-The term "tick" means 100/s, "tick" is not associated with the RefreshRate.
-"""
 
 GAMING = True 
 
@@ -18,8 +12,8 @@ def CalculateRefreshRate(tick_time):
     """
     Calculate the Refresh Rate.
     """
-    g_val.RefreshRate = round(1 / tick_time)
-    game.ChangeFPSMessage(f"FPS: {g_val.RefreshRate}")
+    game.RefreshRate = round(1 / tick_time)
+    game.ChangeFPSMessage(f"FPS: {game.RefreshRate}")
 
 class Game:
     def __init__(self):
@@ -55,6 +49,12 @@ class Game:
         self.canvas.bind_all("<KeyPress-e>", self.RotateClockwise)
         self.canvas.bind_all("<KeyPress-q>", self.RotateCounterClockwise)
 
+        self.RefreshRate = 0
+        self.tanks = []   # The list which stores all the tanks
+        self.shells = []  # The list which stores all the shells
+        self.teams = ["RED", "BLUE"]   # The list which stores all the teams
+        self.bunkers = [] # The list which stores all the bunkers
+
     def GetLeftMousePosition(self, event):
         """
         Get Mouse position when left click. And determine which and whether the tank is selected.
@@ -62,7 +62,7 @@ class Game:
         mouse_x = event.x
         mouse_y = event.y
         if self.IfReadyFire == False:
-            for tank in g_val.tanks:
+            for tank in self.tanks:
                 bbox = self.canvas.bbox(tank.tank)  # Bounding Box
                 if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
                     if tank.IfSelected == False:
@@ -76,7 +76,7 @@ class Game:
 
         if self.IfReadyFire == True:
             target = None
-            for tank in g_val.tanks:
+            for tank in self.tanks:
                 bbox = self.canvas.bbox(tank.tank)  # Bounding Box
                 if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
                     target = tank
@@ -109,7 +109,7 @@ class Game:
         mouse_x = event.x
         mouse_y = event.y
         # Determine whether the destination is inside the bunker(which is unreachable)
-        for bunker in g_val.bunkers:
+        for bunker in self.bunkers:
             if if_point_in_polygon((mouse_x,mouse_y), self.canvas.coords(bunker.bunker)) == True:
                 error_message = Label(self.canvas, text="Unreachable Destination!", font=("Courier",12), background="red")
                 error_message.place(x=mouse_x-40, y=mouse_y-3)
@@ -126,7 +126,7 @@ class Game:
 
     def CancelAll(self, event):
         self.IfReadyFire = False
-        for tank in g_val.tanks:
+        for tank in self.tanks:
             tank.IfSelected = False
         self.selected_tanks.clear()
 
@@ -143,9 +143,9 @@ class Game:
         """
         Game mainloop
         """
-        for tank in g_val.tanks:
+        for tank in self.tanks:
             tank.run()
-        for shell in g_val.shells:
+        for shell in self.shells:
             shell.travel()
         game.tk.update()
 
@@ -163,9 +163,9 @@ tank6 = Tank(game=game, canvas=game.canvas, tank_name="PzIII J", spawn_point=[13
 tank7 = Tank(game=game, canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
 tank8 = Tank(game=game, canvas=game.canvas, tank_name="BT-7", spawn_point=[1300, 700], team="BLUE")
 
-bunker1 = Bunker(canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
-bunker2 = Bunker(canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
-bunker3 = Bunker(canvas=game.canvas, vertices=[800,900,600,500,700,400,800,450])
+bunker1 = Bunker(game=game, canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
+bunker2 = Bunker(game=game, canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
+bunker3 = Bunker(game=game, canvas=game.canvas, vertices=[800,900,600,500,700,400,800,450])
 
 # Print canvas's width and height
 print(game.canvas_width, game.canvas_height)

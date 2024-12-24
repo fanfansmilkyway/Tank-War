@@ -1,7 +1,5 @@
 from tkinter import *
 import math
-
-import global_variables as g_val
 from global_functions import *
 
 class Shell:
@@ -22,14 +20,14 @@ class Shell:
         self.distance = math.sqrt(
             (self.shooter_x-self.target_x)**2 + (self.shooter_y-self.target_y)**2)
         self.TowardTarget()
-        g_val.shells.append(self)
+        self.game.shells.append(self)
         self.previous_coordinate = (self.shell_x, self.shell_y)
 
     def TowardTarget(self):
         """
         Calculate the route of the shell.
         """
-        RealSpeed = self.speed / g_val.RefreshRate
+        RealSpeed = self.speed / self.game.RefreshRate
         destination_x, destination_y = self.target_x, self.target_y
         if self.shooter_y != destination_y:
             CalculationVar = (destination_x-self.shooter_x) / \
@@ -64,7 +62,7 @@ class Shell:
             if self.shell_x <= 0 or self.shell_x >= 1512 or self.shell_y <= 0 or self.shell_y >= 982 or self.target.status == "DESTROYED":
                 print("NOT HIT")
                 self.game.ChangeDebugMessage("NOT HIT")
-                g_val.shells.remove(self)
+                self.game.shells.remove(self)
                 return -1   # Not Hit
             index = IndexList.index(side)
             x1, y1, x2, y2 = target_vertices[side[0]], target_vertices[side[1]
@@ -79,34 +77,34 @@ class Shell:
                     self.game.ChangeDebugMessage("HIT REAR")
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=2, distance=self.distance)
-                    g_val.shells.remove(self)
+                    self.game.shells.remove(self)
                     self.canvas.delete(self.shell_id)
                     return 2
                 if index == 2:
                     self.game.ChangeDebugMessage("HIT SIDE")
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=1, distance=self.distance)
-                    g_val.shells.remove(self)
+                    self.game.shells.remove(self)
                     self.canvas.delete(self.shell_id)
                     return 1
                 if index == 1:
                     self.game.ChangeDebugMessage("HIT FRONT")
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=0, distance=self.distance)
-                    g_val.shells.remove(self)
+                    self.game.shells.remove(self)
                     self.canvas.delete(self.shell_id)
                     return 0
                 if index == 0:
                     self.game.ChangeDebugMessage("HIT SIDE")
                     self.target.GetHit(
                         shooter=self.shooter.tank_name, part=1, distance=self.distance)
-                    g_val.shells.remove(self)
+                    self.game.shells.remove(self)
                     self.canvas.delete(self.shell_id)
                     return 1
                 
-        for bunker in g_val.bunkers: # Hit the bunker
+        for bunker in self.game.bunkers: # Hit the bunker
             if if_point_in_polygon((self.shell_x,self.shell_y), bunker.vertices):
-                g_val.shells.remove(self)
+                self.game.shells.remove(self)
                 self.canvas.delete(self.shell_id)
                 del(self)
                 return "HIT the bunker"
