@@ -1,0 +1,58 @@
+In the communication, we use some 'codes' to represent certain actions in the game.
+
+Message Stucture: (Stynax)
+(Action) */* (Object 1) */* (Object 2)
+
+<--------------------------------->
+
+To Server Actions: (Sent by clients and received by server)
+1. CREATE (Create a tank)
+Object 1 --> TankID(created tank)
+Object 2 --> Coordinate(initial location)
+# This message should be sent by the creator client side. And the server side should forward this msg to the other client(CREATE).
+
+2. MOVETO (Move a tank to a certain locatino)
+Object 1 --> TankID(mover)
+Object 2 --> Coordinate(destination)
+# This message should be sent by the moving client side. And the server side should forward this msg to the other client.
+
+3. SHOOT
+Object 1 --> TankID(shooter)
+Object 2 --> TankID(tank which is hit)
+# This message should be sent by the shooting client side. And the server side should forward this msg to the other client.
+
+4. DESTROYED (Our tank has been destroyed)
+Object 1 --> TankID(destroyed tank)
+Object 2 --> None
+# This message should be sent by the client whose tank is eliminated. And the server side should forward this msg to the other client.
+
+5. QUIT (Game ended or suspended, or player delibrately quited)
+Object 1,2 --> None
+# This message should be sent by the client who quited. And the server side should forward this msg to the other client.
+
+<--------------------------------->
+
+To Client Actions: (Sent by server and received by clients)
+!: Need to be cautious with which client to send to.
+
+1. CREATE (Opponent created a tank)
+Object 1 --> TankID(created tank)
+Object 2 --> Coordinate(initial location)
+# Create a puppet tank
+
+2. MOVETO (Opponent moved a tank to a certain location)
+Object 1 --> TankID(mover)
+Object 2 --> Coordinate(destination)
+# Give command to the pupper tank to move
+
+3. SHOOT (Opponent shot)
+Object 1 --> TankID(shooter)
+Object 2 --> TankID(tank which is hit)
+# Create a puppet shell. And meanwhile calculate whether the opponent's shell penetrated our armour. If penetrated, send DESTRYOED msg to the server
+
+4. DESTROYED (Opponent's tank has been destroyed by our side)
+Object 1 --> TankID(destroyed tank)
+Object 2 --> None
+
+5. QUIT (Opponent quited)
+Object 1,2 --> None
