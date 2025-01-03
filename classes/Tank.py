@@ -7,12 +7,13 @@ from classes.Shell import Shell
 import playsound3
 
 class Tank:
-    def __init__(self, game, canvas: Canvas, tank_name: str, team:str, spawn_point: list = [100, 100]):
+    def __init__(self, id, game, canvas: Canvas, tank_name: str, team:str, spawn_point: list = [100, 100]):
         self.game = game
         self.game.tanks.append(self)
+        self.game.tank_id[id] = self
         self.tank_name = tank_name
         self.team = team  # team name represents its color
-        #self.team = team
+        self.id = id
         try:
             self.capability = TANK_CAPABILITY[self.tank_name]
         except KeyError:
@@ -34,7 +35,7 @@ class Tank:
         self.reloading_indicator = self.canvas.create_text(
             self.spawn_point[0], self.spawn_point[1]-20, fill="green", text="*", font=("Courier", "18"))
         self.direction_point = [self.spawn_point[0]+20, self.spawn_point[1]]
-        self.previous_mouse_position = []
+
         self.destination_x = 0
         self.destination_y = 0
         # For better calculating speed
@@ -66,6 +67,23 @@ class Tank:
         centre_y = k1*centre_x + b1
         return centre_x, centre_y
 
+    def Forward(self):
+        """
+        Go forward in current direction.
+        """
+        RealSpeed = self.speed / self.game.RefreshRate # Dynamically adjust the speed depending on the refresh rate
+        current_x, current_y = self.GetCentreCoordinate()
+        direction_x, direction_y = self.direction_point[0], self.direction_point[1]
+        toward_x = (direction_x - current_x) * RealSpeed
+        toward_y = (direction_y - current_y) * RealSpeed
+        self.canvas.move(self.tank, toward_x, toward_y)
+        self.canvas.move(self.tank_text, toward_x, toward_y)
+        self.canvas.move(self.direction_label, toward_x, toward_y)
+        self.canvas.move(self.reloading_indicator, toward_x, toward_y)
+        self.direction_point = [
+                    self.direction_point[0]+self.toward_x, self.direction_point[1]+self.toward_y]
+        self.status = "GO_FORWARD"
+
     def TowardDestination(self, destination_x, destination_y):
         """
         About the value of this function returns:
@@ -74,11 +92,11 @@ class Tank:
         """
         RealSpeed = self.speed / self.game.RefreshRate # Dynamically adjust the speed depending on the refresh rate
         current_x, current_y = self.GetCentreCoordinate()
-        if destination_x == current_x and destination_y == current_y:
+        if abs(destination_x-current_x)<0.5 and abs(destination_y-current_y)<0.5:
+            self.status = "IDLE"
             return 0  # Already at the destination
-
-        if destination_x != self.previous_destination_x and destination_y != self.previous_destination_y:
-            if current_y != destination_y:
+        
+        if current_y != destination_y:
                 CalculationVar = (destination_x-current_x) / \
                     (destination_y-current_y)
                 distance = math.sqrt(
@@ -91,7 +109,7 @@ class Tank:
                 if destination_x - current_x < 0:
                     self.toward_x = -self.toward_x
 
-            if current_y == destination_y:  # Prevent DividedByZero Error in CalculationVar
+        if current_y == destination_y:  # Prevent DividedByZero Error in CalculationVar
                 if destination_x - current_x < 0:
                     self.toward_x = -RealSpeed
                 if destination_x - current_x > 0:
@@ -100,39 +118,21 @@ class Tank:
                 self.NumberOfMoves = round(distance / RealSpeed)
                 self.toward_y = 0
 
-            self.previous_destination_x = destination_x
-            self.previous_destination_y = destination_y
-
         # Determine whether the next step will touch the bunker. If it will, then stop the moving process
         for bunker in self.game.bunkers:
             if if_point_in_polygon((current_x+self.toward_x, current_y+self.toward_y), bunker.vertices):
                 self.status = "IDLE"
                 self.NumberOfMoves = -1
                 return 0
-
-        if destination_x == -1 or destination_y == -1 or self.NumberOfMoves == 0:  # No destination
-            self.status = "IDLE"
-            return 0
-
-        if destination_x == self.previous_destination_x and destination_y == self.previous_destination_y:
-            if self.NumberOfMoves <= 0:
-                self.previous_destination_x = -1  # -1 means no destination
-                self.previous_destination_y = -1
-                self.status = "IDLE"
-                return 0
-            if self.NumberOfMoves > 0:
-                self.canvas.move(self.tank, self.toward_x, self.toward_y)
-                self.canvas.move(self.tank_text, self.toward_x, self.toward_y)
-                self.canvas.move(self.direction_label,
+            
+        self.canvas.move(self.tank, self.toward_x, self.toward_y)
+        self.canvas.move(self.tank_text, self.toward_x, self.toward_y)
+        self.canvas.move(self.direction_label,
                                  self.toward_x, self.toward_y)
-                self.canvas.move(self.reloading_indicator,
+        self.canvas.move(self.reloading_indicator,
                                  self.toward_x, self.toward_y)
-                self.direction_point = [
+        self.direction_point = [
                     self.direction_point[0]+self.toward_x, self.direction_point[1]+self.toward_y]
-
-                self.NumberOfMoves -= 1
-                self.status = "MOVING"
-                return 1
 
     def rotate(self, rotation_angle: float):
         """
@@ -213,7 +213,7 @@ class Tank:
             playsound3.playsound("./mp3/Reloading_hasn't_completed_yet.mp3", block=False)
             return
         
-        playsound3.playsound("./mp3/Cannon-firing.mp3", block=False)
+        playsound3.playsound("./mp3/Cannon_Firing.wav", block=False)
         self.IfReloaded = False
         self.canvas.itemconfig(self.reloading_indicator, fill="red")
 
@@ -233,6 +233,7 @@ class Tank:
     
     def reload(self):
         self.IfReloaded = True
+        playsound3.playsound("./mp3/Reload_Completed.mp3", block=False)
         self.canvas.itemconfig(self.reloading_indicator, fill="green")
 
     def run(self):
