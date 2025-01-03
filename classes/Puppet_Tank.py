@@ -6,7 +6,7 @@ from global_functions import *
 from classes.Shell import Shell
 import playsound3
 
-class Tank:
+class Puppet_Tank:
     def __init__(self, id, game, canvas: Canvas, tank_name: str, team:str, spawn_point: list = [100, 100]):
         self.game = game
         self.game.tanks.append(self)
@@ -14,6 +14,7 @@ class Tank:
         self.tank_name = tank_name
         self.team = team  # team name represents its color
         self.id = id
+        #self.team = team
         try:
             self.capability = TANK_CAPABILITY[self.tank_name]
         except KeyError:
@@ -66,23 +67,6 @@ class Tank:
         centre_x = (b2-b1) / (k1-k2)
         centre_y = k1*centre_x + b1
         return centre_x, centre_y
-
-    def Forward(self):
-        """
-        Go forward in current direction.
-        """
-        RealSpeed = self.speed / self.game.RefreshRate # Dynamically adjust the speed depending on the refresh rate
-        current_x, current_y = self.GetCentreCoordinate()
-        direction_x, direction_y = self.direction_point[0], self.direction_point[1]
-        toward_x = (direction_x - current_x) * RealSpeed
-        toward_y = (direction_y - current_y) * RealSpeed
-        self.canvas.move(self.tank, toward_x, toward_y)
-        self.canvas.move(self.tank_text, toward_x, toward_y)
-        self.canvas.move(self.direction_label, toward_x, toward_y)
-        self.canvas.move(self.reloading_indicator, toward_x, toward_y)
-        self.direction_point = [
-                    self.direction_point[0]+self.toward_x, self.direction_point[1]+self.toward_y]
-        self.status = "GO_FORWARD"
 
     def TowardDestination(self, destination_x, destination_y):
         """
@@ -213,7 +197,7 @@ class Tank:
             playsound3.playsound("./mp3/Reloading_hasn't_completed_yet.mp3", block=False)
             return
         
-        playsound3.playsound("./mp3/Cannon_Firing.wav", block=False)
+        playsound3.playsound("./mp3/Cannon-firing.mp3", block=False)
         self.IfReloaded = False
         self.canvas.itemconfig(self.reloading_indicator, fill="red")
 

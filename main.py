@@ -4,7 +4,10 @@ import sys
 import playsound3
 from classes.Tank import Tank
 from classes.Bunker import Bunker
+from classes.Puppet_Tank import Puppet_Tank
+from communication.client.client import Communication_Client
 from global_functions import *
+import threading
 
 GAMING = True 
 
@@ -45,15 +48,20 @@ class Game:
         self.canvas.bind_all("<KeyPress-a>", self.ReadyFire)
         self.canvas.bind_all("<ButtonPress-1>", self.GetLeftMousePosition)  # Left Click
         self.canvas.bind_all("<ButtonPress-2>", self.GetRightMousePosition)  # Right Click
+        self.canvas.bind_all("<KeyPress-f>", self.Forward)
         self.canvas.bind_all("<Escape>", self.CancelAll)
         self.canvas.bind_all("<KeyPress-e>", self.RotateClockwise)
         self.canvas.bind_all("<KeyPress-q>", self.RotateCounterClockwise)
 
-        self.RefreshRate = 0
+        self.RefreshRate = 1
         self.tanks = []   # The list which stores all the tanks
         self.shells = []  # The list which stores all the shells
         self.teams = ["RED", "BLUE"]   # The list which stores all the teams
         self.bunkers = [] # The list which stores all the bunkers
+
+        self.tank_id = {} # The dictionary which stores all the tanks' id and its corresponding tank object
+
+        self.client = Communication_Client(game=self)
 
     def GetLeftMousePosition(self, event):
         """
@@ -121,6 +129,10 @@ class Game:
             tank.destination_y = mouse_y
             tank.status = "MOVING"
 
+    def Forward(self, event):
+        for tank in self.selected_tanks:
+            tank.status = "GO_FORWARD"
+
     def ReadyFire(self, event):
         self.IfReadyFire = True
 
@@ -154,14 +166,14 @@ class Game:
         GAMING = False
 
 game = Game()
-tank1 = Tank(game=game, canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
-tank2 = Tank(game=game, canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
-tank3 = Tank(game=game, canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
-tank4 = Tank(game=game, canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
-tank5 = Tank(game=game, canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
-tank6 = Tank(game=game, canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
-tank7 = Tank(game=game, canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
-tank8 = Tank(game=game, canvas=game.canvas, tank_name="BT-7", spawn_point=[1300, 700], team="BLUE")
+tank1 = Tank(game=game, id="R1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
+tank2 = Tank(game=game, id="R2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
+tank3 = Tank(game=game, id="R3", canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
+tank4 = Tank(game=game, id="R4", canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
+tank5 = Tank(game=game, id="B1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
+tank6 = Tank(game=game, id="B2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
+tank7 = Tank(game=game, id="B3", canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
+tank8 = Tank(game=game, id="B4", canvas=game.canvas, tank_name="BT-7", spawn_point=[1300, 700], team="BLUE")
 
 bunker1 = Bunker(game=game, canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(game=game, canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
@@ -169,6 +181,9 @@ bunker3 = Bunker(game=game, canvas=game.canvas, vertices=[800,900,600,500,700,40
 
 # Print canvas's width and height
 print(game.canvas_width, game.canvas_height)
+
+Communication_Thread = threading.Thread(target=game.client.run, args=())
+Communication_Thread.start()
 
 while True:
     if GAMING == True:

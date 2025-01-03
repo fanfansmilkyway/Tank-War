@@ -7,7 +7,7 @@ Message Stucture: (Stynax)
 
 To Server Actions: (Sent by clients and received by server)
 1. CREATE (Create a tank)
-Object 1 --> TankID(created tank)
+Object 1 --> TankID(created tank) + Tank Model
 Object 2 --> Coordinate(initial location)
 # This message should be sent by the creator client side. And the server side should forward this msg to the other client(CREATE).
 

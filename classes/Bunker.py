@@ -1,3 +1,4 @@
+# The obtacles
 from tkinter import *
 from global_functions import *
 
