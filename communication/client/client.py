@@ -1,19 +1,18 @@
 import socket
+import ast
+import sys
+import os
 
 FORMAT = 'utf-8'
 ADDR = ("127.0.0.1", 8080) # Server IP
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
+try:
+    client.connect(ADDR)
+except ConnectionRefusedError:
+    print('\033[31m', f"[ERROR]Unable to establish connection to the server. Please check your network status or the server's running status.")
+    exit()
 print("[CONNECTION] Successfully connected with the server")
-
-msg = client.recv(2024).decode(FORMAT)
-print(msg)
-import socket
-import ast
-import sys
-import os
-
 
 FORMAT = 'utf-8'
 ADDR = ("127.0.0.1", 8080) # Server IP

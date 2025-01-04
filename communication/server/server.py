@@ -8,6 +8,8 @@ ADDR = ("127.0.0.1", 8080)
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
+clients = []
+
 # Sending Functions
 def CREATE(client, tank_id:str, tank_model:str, spawn_coordinate:list):
     """
@@ -44,12 +46,14 @@ def QUIT(client):
     message = "QUIT"
     client.sned(message.encode(FORMAT))
 
+msg = ""
 
 def handle_client(client:socket.socket):
-    time.sleep(0.5)
-    client.send(b"MOVETO*/*B5*/*[500,500]")
-    time.sleep(2)
-    client.send(b"MOVETO*/*B5*/*[0,0]")
+    global msg
+    while True:
+        msg = client.recv(2024).decode(FORMAT)
+        if msg != "":
+            print(msg)
     
 
 # First estabilish the connection with the client
@@ -57,7 +61,7 @@ server.listen()
 print(f"[LITSEN]Server is now listening on {ADDR}")
 while True:
     conn, addr = server.accept()
+    clients.append(conn)
     thread = threading.Thread(target=handle_client, args=(conn,))
     thread.start()
     print(f"[CONNECTION]Successfully connected with {conn}")
-

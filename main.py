@@ -127,6 +127,7 @@ class Game:
         for tank in self.selected_tanks:
             tank.destination_x = mouse_x
             tank.destination_y = mouse_y
+            self.client.MOVETO(tank_id=tank.id, destination=[mouse_x, mouse_y])
             tank.status = "MOVING"
 
     def Forward(self, event):

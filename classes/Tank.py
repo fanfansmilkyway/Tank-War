@@ -14,6 +14,7 @@ class Tank:
         self.tank_name = tank_name
         self.team = team  # team name represents its color
         self.id = id
+        self.conn = game.client
         try:
             self.capability = TANK_CAPABILITY[self.tank_name]
         except KeyError:
@@ -48,6 +49,8 @@ class Tank:
         self.status = "IDLE"  # Status are: "IDLE", "MOVING", "DESTROYED"
         self.IfSelected = False
         self.IfReloaded = True
+
+        self.conn.CREATE(tank_id=self.id, tank_model=self.tank_name, spawn_coordinate=self.spawn_point)
 
     def GetCentreCoordinate(self, target=None):
         """
@@ -204,6 +207,7 @@ class Tank:
             [True, False], [Destroyed_Probability, 1-Destroyed_Probability])
         if IfDestroyed == [True]:
             self.status = "DESTROYED"
+            self.conn.DESTROYED(destroyed_tank_id=self.id)
 
     def shoot(self, target):
         if target.team == self.team: 
@@ -226,6 +230,8 @@ class Tank:
             current_x, current_y, target_x, target_y, arrow=LAST, fill='black')
         DistanceLabel = self.canvas.create_text(
             (current_x+target_x)/2+8, (current_y+target_y)/2, text=f"{round(distance)}", fill="black")
+        
+        self.conn.SHOOT(self.id, target.id)
         
         self.game.tk.after(300, self.canvas.delete, ShootArrow)
         self.game.tk.after(300, self.canvas.delete, DistanceLabel)
