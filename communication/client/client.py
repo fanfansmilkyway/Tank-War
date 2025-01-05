@@ -25,7 +25,6 @@ class Communication_Client():
             exit()
         print("[CONNECTION] Successfully connected with the server")
         self.game = game
-        print("[CONNECTION] Successfully connected with the server")
         #self.CreatePuppetTank(id="B5", model="T34-76", team="BLUE", spawn_point=[300,250])
     
     def CreatePuppetTank(self, id, model, team, spawn_point):
