@@ -9,8 +9,6 @@ from communication.client.client import Communication_Client
 from global_functions import *
 import threading
 
-GAMING = True 
-
 def CalculateRefreshRate(tick_time):
     """
     Calculate the Refresh Rate.
@@ -21,6 +19,7 @@ def CalculateRefreshRate(tick_time):
 class Game:
     def __init__(self):
         # Initialize the canvas
+        self.GAMING = True
         self.tk = Tk()
         self.tk.title("Tank War")
         self.canvas = Canvas(self.tk, background="white")
@@ -163,8 +162,8 @@ class Game:
         game.tk.update()
 
     def end_game(self):
-        global GAMING
-        GAMING = False
+        self.GAMING = False
+        sys.exit(0)
 
 game = Game()
 tank1 = Tank(game=game, id="R1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
@@ -187,12 +186,12 @@ Communication_Thread = threading.Thread(target=game.client.run, args=())
 Communication_Thread.start()
 
 while True:
-    if GAMING == True:
+    if game.GAMING == True:
         T1 = time.time()
         game.refresh()
         T2 = time.time()
         CalculateRefreshRate(T2-T1)
-    if GAMING == False:
+    if game.GAMING == False:
         break
 
-sys.exit()
+sys.exit(0)

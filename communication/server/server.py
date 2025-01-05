@@ -8,7 +8,7 @@ ADDR = ("127.0.0.1", 8080)
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
-clients = []
+clients = [] # The lish which stores all the connected clients
 
 # Sending Functions
 def CREATE(client, tank_id:str, tank_model:str, spawn_coordinate:list):
@@ -51,8 +51,20 @@ msg = ""
 def handle_client(client:socket.socket):
     global msg
     while True:
-        msg = client.recv(2024).decode(FORMAT)
-        if msg != "":
+        len_msg = client.recv(5).decode(FORMAT)
+        if len_msg != "":
+            try:
+                int(len_msg)
+            except ValueError:
+                continue
+            b_msg = client.recv(int(len_msg))
+            msg = b_msg.decode(FORMAT)
+            # Broadcast the message to other clients
+            for conn in clients:
+                if conn != client:
+                    len_msg = "{:05d}".format(len(msg))
+                    conn.send(len_msg.encode(FORMAT))
+                    conn.send(b_msg)
             print(msg)
     
 

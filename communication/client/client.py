@@ -42,6 +42,8 @@ class Communication_Client():
         Inform the server that a tank has been created
         """
         message = f"CREATE*/*{tank_id}+{tank_model}*/*{spawn_coordinate}"
+        len_msg = "{:05d}".format(len(message))
+        self.client.send(len_msg.encode(FORMAT))
         self.client.send(message.encode(FORMAT))
 
     def MOVETO(self, tank_id:str, destination:list):
@@ -49,6 +51,8 @@ class Communication_Client():
         Inform the server that a tank moved to a certain location
         """
         message = f"MOVETO*/*{tank_id}*/*{destination}"
+        len_msg = "{:05d}".format(len(message))
+        self.client.send(len_msg.encode(FORMAT))
         self.client.send(message.encode(FORMAT))
 
     def SHOOT(self, shooter_tank_id:str, target_tank_id:str):
@@ -56,6 +60,8 @@ class Communication_Client():
         Inform the server that a tank shot a shell to another tank.
         """
         message = f"SHOOT*/*{shooter_tank_id}*/*{target_tank_id}"
+        len_msg = "{:05d}".format(len(message))
+        self.client.send(len_msg.encode(FORMAT))
         self.client.send(message.encode(FORMAT))
 
     def DESTROYED(self, destroyed_tank_id:str):
@@ -63,6 +69,8 @@ class Communication_Client():
         Inform the server that one of our tanks has been destroyed
         """
         message = f"DESTROYED*/*{destroyed_tank_id}"
+        len_msg = "{:05d}".format(len(message))
+        self.client.send(len_msg.encode(FORMAT))
         self.client.send(message.encode(FORMAT))
 
     def QUIT(self):
@@ -70,6 +78,8 @@ class Communication_Client():
         Inform the server that the client quited
         """
         message = "QUIT"
+        len_msg = "{:05d}".format(len(message))
+        self.client.send(len_msg.encode(FORMAT))
         self.client.sned(message.encode(FORMAT))
 
     # Receiving Functions
@@ -97,6 +107,16 @@ class Communication_Client():
 
     def run(self):
         while True:
-            message = self.client.recv(2024).decode(FORMAT)
-            print(message)
+            if self.game.GAMING == False:
+                print("EXITED")
+                sys.exit(0)
+                break
+            len_msg = client.recv(5).decode(FORMAT)
+            if len_msg != "":
+                try:
+                    int(len_msg)
+                except ValueError:
+                    continue
+                message = client.recv(int(len_msg))
+            print(message, len_msg)
             self.Message_Parser(message=message)
