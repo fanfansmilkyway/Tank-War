@@ -2,8 +2,11 @@ import socket
 import threading
 import time
 
+IP = '192.168.1.229'
+PORT = 8080
+
 FORMAT = 'utf-8'
-ADDR = ("127.0.0.1", 8080)
+ADDR = (IP, PORT)
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
@@ -62,10 +65,18 @@ def handle_client(client:socket.socket):
             # Broadcast the message to other clients
             for conn in clients:
                 if conn != client:
+                    print("NOT CLIENT")
                     len_msg = "{:05d}".format(len(msg))
                     conn.send(len_msg.encode(FORMAT))
                     conn.send(b_msg)
             print(msg)
+    """
+    msg = "CREATE*/*B5+T34-76*/*[300,300]"
+    len_msg = "{:05d}".format(len(msg))
+    conn.send(len_msg.encode(FORMAT))
+    conn.send(msg.encode(FORMAT))
+    """
+    
     
 
 # First estabilish the connection with the client

@@ -1,6 +1,5 @@
 # The obtacles
 from tkinter import *
-from global_functions import *
 
 class Bunker:
     def __init__(self, game, canvas:Canvas, vertices:list):

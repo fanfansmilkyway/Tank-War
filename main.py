@@ -19,7 +19,6 @@ def CalculateRefreshRate(tick_time):
 class Game:
     def __init__(self):
         # Initialize the canvas
-        self.GAMING = True
         self.tk = Tk()
         self.tk.title("Tank War")
         self.canvas = Canvas(self.tk, background="white")
@@ -55,12 +54,21 @@ class Game:
         self.RefreshRate = 1
         self.tanks = []   # The list which stores all the tanks
         self.shells = []  # The list which stores all the shells
-        self.teams = ["RED", "BLUE"]   # The list which stores all the teams
+        self.teams = "RED"
         self.bunkers = [] # The list which stores all the bunkers
 
         self.tank_id = {} # The dictionary which stores all the tanks' id and its corresponding tank object
 
         self.client = Communication_Client(game=self)
+
+        self.GAMING = True
+
+        # Some tricky stuff
+        self.to_create_tank = False
+        self.to_create_tank_id = None
+        self.to_create_tank_model = None
+        self.to_create_tank_spawn_point = None
+        self.to_create_tank_team = None
 
     def GetLeftMousePosition(self, event):
         """
@@ -71,7 +79,7 @@ class Game:
         if self.IfReadyFire == False:
             for tank in self.tanks:
                 bbox = self.canvas.bbox(tank.tank)  # Bounding Box
-                if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
+                if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3] and not isinstance(tank, Puppet_Tank):
                     if tank.IfSelected == False:
                         tank.IfSelected = True
                         self.selected_tanks.append(tank)
@@ -95,6 +103,11 @@ class Game:
 
             self.IfReadyFire = False
 
+    def CreatePuppetTank(self):
+        puppet = Puppet_Tank(game=self, canvas=self.canvas, id=self.to_create_tank, tank_name=self.to_create_tank_model, spawn_point=self.to_create_tank_spawn_point, team=self.to_create_tank_team)
+        self.to_create_tank = False
+        return puppet
+    
     def RotateCounterClockwise(self, event):
         """
         Rotate the tank counterclockwise for 5 degrees
@@ -159,6 +172,8 @@ class Game:
             tank.run()
         for shell in self.shells:
             shell.travel()
+        if self.to_create_tank == True:
+            self.CreatePuppetTank()
         game.tk.update()
 
     def end_game(self):

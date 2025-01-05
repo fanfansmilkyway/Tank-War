@@ -3,19 +3,11 @@ import ast
 import sys
 import os
 
-FORMAT = 'utf-8'
-ADDR = ("127.0.0.1", 8080) # Server IP
-
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    client.connect(ADDR)
-except ConnectionRefusedError:
-    print('\033[31m', f"[ERROR]Unable to establish connection to the server. Please check your network status or the server's running status.")
-    exit()
-print("[CONNECTION] Successfully connected with the server")
+IP = '192.168.1.229'
+PORT = 8080
 
 FORMAT = 'utf-8'
-ADDR = ("127.0.0.1", 8080) # Server IP
+ADDR = (IP, PORT) # Server IP
 
 external_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(external_path)
@@ -25,17 +17,24 @@ from classes.Puppet_Tank import Puppet_Tank
 
 class Communication_Client():
     def __init__(self, game):
-        self.game = game
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client.connect(ADDR)
+        try:
+            self.client.connect(ADDR)
+        except ConnectionRefusedError:
+            print('\033[31m', f"[ERROR]Unable to establish connection to the server. Please check your network status or the server's running status.")
+            exit()
         print("[CONNECTION] Successfully connected with the server")
-        self.CreatePuppetTank(id="B5", model="T34-76", team="BLUE", spawn_point=[300,250])
-
-    def CreatePuppetTank(self, id, model, team, spawn_point):
-        puppet = Puppet_Tank(id=id, game=self.game, canvas=self.game.canvas, tank_name=model, team=team, spawn_point=spawn_point)
-        self.game.tanks.append(puppet)
-        return puppet
+        self.game = game
+        print("[CONNECTION] Successfully connected with the server")
+        #self.CreatePuppetTank(id="B5", model="T34-76", team="BLUE", spawn_point=[300,250])
     
+    def CreatePuppetTank(self, id, model, team, spawn_point):
+        self.game.to_create_tank_id = id
+        self.game.to_create_tank_model = model
+        self.game.to_create_tank_team = team
+        self.game.to_create_tank_spawn_point = spawn_point
+        self.game.to_create_tank = True
+
     # Sending Functions
     def CREATE(self, tank_id:str, tank_model:str, spawn_coordinate:list):
         """
@@ -95,7 +94,8 @@ class Communication_Client():
             splitted_OBJECT1 = OBJECT1.split("+")
             id = splitted_OBJECT1[0]
             model = splitted_OBJECT1[1]
-            OBJECT2 = spawn_point = list(splitted_message[2])
+            OBJECT2 = spawn_point = ast.literal_eval(splitted_message[2])
+            #print(OBJECT1, OBJECT2)
             self.CreatePuppetTank(id=id, model=model, team="BLUE", spawn_point=spawn_point)
 
         if ACTION == "MOVETO":
@@ -111,12 +111,12 @@ class Communication_Client():
                 print("EXITED")
                 sys.exit(0)
                 break
-            len_msg = client.recv(5).decode(FORMAT)
+            len_msg = self.client.recv(5).decode(FORMAT)
             if len_msg != "":
                 try:
                     int(len_msg)
                 except ValueError:
                     continue
-                message = client.recv(int(len_msg))
+                message = self.client.recv(int(len_msg)).decode(FORMAT)
             print(message, len_msg)
             self.Message_Parser(message=message)
