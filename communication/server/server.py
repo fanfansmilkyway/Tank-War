@@ -3,7 +3,7 @@ import threading
 import time
 
 IP = '192.168.1.229'
-PORT = 8080
+PORT = 8081
 
 FORMAT = 'utf-8'
 ADDR = (IP, PORT)

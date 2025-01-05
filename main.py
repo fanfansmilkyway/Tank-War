@@ -65,10 +65,10 @@ class Game:
 
         # Some tricky stuff
         self.to_create_tank = False
-        self.to_create_tank_id = None
-        self.to_create_tank_model = None
-        self.to_create_tank_spawn_point = None
-        self.to_create_tank_team = None
+        self.to_create_tank_id = []
+        self.to_create_tank_model = []
+        self.to_create_tank_spawn_point = []
+        self.to_create_tank_team = []
 
     def GetLeftMousePosition(self, event):
         """
@@ -104,8 +104,13 @@ class Game:
             self.IfReadyFire = False
 
     def CreatePuppetTank(self):
-        puppet = Puppet_Tank(game=self, canvas=self.canvas, id=self.to_create_tank, tank_name=self.to_create_tank_model, spawn_point=self.to_create_tank_spawn_point, team=self.to_create_tank_team)
+        for index in range(len(self.to_create_tank_id)):
+            puppet = Puppet_Tank(game=self, canvas=self.canvas, id=self.to_create_tank_id[index], tank_name=self.to_create_tank_model[index], spawn_point=self.to_create_tank_spawn_point[index], team=self.to_create_tank_team[index])
         self.to_create_tank = False
+        self.to_create_tank_id.clear()
+        self.to_create_tank_model.clear()
+        self.to_create_tank_spawn_point.clear()
+        self.to_create_tank_team.clear()
         return puppet
     
     def RotateCounterClockwise(self, event):
@@ -185,10 +190,12 @@ tank1 = Tank(game=game, id="R1", canvas=game.canvas, tank_name="PzIV H", spawn_p
 tank2 = Tank(game=game, id="R2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
 tank3 = Tank(game=game, id="R3", canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
 tank4 = Tank(game=game, id="R4", canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
+"""
 tank5 = Tank(game=game, id="B1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
 tank6 = Tank(game=game, id="B2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
 tank7 = Tank(game=game, id="B3", canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
 tank8 = Tank(game=game, id="B4", canvas=game.canvas, tank_name="BT-7", spawn_point=[1300, 700], team="BLUE")
+"""
 
 bunker1 = Bunker(game=game, canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(game=game, canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])

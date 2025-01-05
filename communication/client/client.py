@@ -4,7 +4,7 @@ import sys
 import os
 
 IP = '192.168.1.229'
-PORT = 8080
+PORT = 8081
 
 FORMAT = 'utf-8'
 ADDR = (IP, PORT) # Server IP
@@ -28,10 +28,10 @@ class Communication_Client():
         #self.CreatePuppetTank(id="B5", model="T34-76", team="BLUE", spawn_point=[300,250])
     
     def CreatePuppetTank(self, id, model, team, spawn_point):
-        self.game.to_create_tank_id = id
-        self.game.to_create_tank_model = model
-        self.game.to_create_tank_team = team
-        self.game.to_create_tank_spawn_point = spawn_point
+        self.game.to_create_tank_id.append(id)
+        self.game.to_create_tank_model.append(model)
+        self.game.to_create_tank_team.append(team)
+        self.game.to_create_tank_spawn_point.append(spawn_point)
         self.game.to_create_tank = True
 
     # Sending Functions
@@ -117,5 +117,4 @@ class Communication_Client():
                 except ValueError:
                     continue
                 message = self.client.recv(int(len_msg)).decode(FORMAT)
-            print(message, len_msg)
             self.Message_Parser(message=message)

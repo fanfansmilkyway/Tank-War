@@ -8,7 +8,9 @@ import playsound3
 
 class Puppet_Tank:
     def __init__(self, id, game, canvas: Canvas, tank_name: str, team:str, spawn_point: list = [100, 100]):
+        print("CREATE PUPPET TANK")
         self.game = game
+        self.game.tank_id[id] = self
         self.tank_name = tank_name
         self.team = team  # team name represents its color
         self.id = id
@@ -49,7 +51,7 @@ class Puppet_Tank:
         self.IfReloaded = True
 
         self.game.tanks.append(self)
-        self.game.tank_id[id] = self
+        
 
     def GetCentreCoordinate(self, target=None):
         """
