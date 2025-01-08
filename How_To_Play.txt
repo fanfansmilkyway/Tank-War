@@ -1,0 +1,5 @@
+Mouse Left Click: select tank(s)
+Mouse Right Click: move the tank(s)
+Key a + Left Mouse Click: shoot
+Key e: Rotate the tank clockwise
+Key q: Rotate the tank counterclockwise

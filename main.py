@@ -53,7 +53,7 @@ class Game:
         self.canvas.bind_all("<KeyPress-a>", self.ReadyFire)
         self.canvas.bind_all("<ButtonPress-1>", self.GetLeftMousePosition)  # Left Click
         self.canvas.bind_all("<ButtonPress-2>", self.GetRightMousePosition)  # Right Click
-        self.canvas.bind_all("<KeyPress-f>", self.Forward)
+        #self.canvas.bind_all("<KeyPress-f>", self.Forward)
         self.canvas.bind_all("<Escape>", self.CancelAll)
         self.canvas.bind_all("<KeyPress-e>", self.RotateClockwise)
         self.canvas.bind_all("<KeyPress-q>", self.RotateCounterClockwise)
