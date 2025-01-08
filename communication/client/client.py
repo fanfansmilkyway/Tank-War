@@ -106,6 +106,13 @@ class Communication_Client():
             tank.destination_x, tank.destination_y = destination[0], destination[1]
             tank.status = "MOVING"
 
+        if ACTION == "SHOOT":
+            OBJECT1 = shooter_id = splitted_message[1]
+            OBJECT2 = target_id = splitted_message[2]
+            shooter = self.game.tank_id[shooter_id]
+            target = self.game.tank_id[target_id]
+            
+
         if ACTION == "START":
             print("GAME START!")
             self.game.logger.info("Opponent Connected")

@@ -231,8 +231,6 @@ class Tank:
         DistanceLabel = self.canvas.create_text(
             (current_x+target_x)/2+8, (current_y+target_y)/2, text=f"{round(distance)}", fill="black")
         
-        self.conn.SHOOT(self.id, target.id)
-        
         self.game.tk.after(300, self.canvas.delete, ShootArrow)
         self.game.tk.after(300, self.canvas.delete, DistanceLabel)
         self.game.tk.after(round(self.reloading_speed*1000), self.reload)

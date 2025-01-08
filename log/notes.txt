@@ -1,0 +1,2 @@
+This directory is specially for storing the log produced by the program.
+log.log file is only for debugging purpose.

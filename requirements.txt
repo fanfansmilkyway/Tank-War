@@ -1,0 +1,2 @@
+waiting==1.5.0
+playsound3==2.3.0

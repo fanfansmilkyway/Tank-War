@@ -1,3 +1,4 @@
+# Python 3.13.0
 # Built-in Modules
 from tkinter import *
 import time
@@ -108,10 +109,9 @@ class Game:
                 if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3]:
                     target = tank
             if target != None:
-                name_list = []
                 for tank in self.selected_tanks:
                     tank.shoot(target)
-                    name_list.append(tank.tank_name)
+                    self.client.SHOOT(tank.id, target.id)
 
             self.IfReadyFire = False
 
@@ -213,10 +213,10 @@ tank2 = Tank(game=game, id="R2", canvas=game.canvas, tank_name="PzIII J", spawn_
 tank3 = Tank(game=game, id="R3", canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
 tank4 = Tank(game=game, id="R4", canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
 """
-tank5 = Tank(game=game, id="B1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[1300, 100], team="BLUE")
-tank6 = Tank(game=game, id="B2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[1300, 150], team="BLUE")
-tank7 = Tank(game=game, id="B3", canvas=game.canvas, tank_name="Matilda II", spawn_point=[1300, 600], team="BLUE")
-tank8 = Tank(game=game, id="B4", canvas=game.canvas, tank_name="BT-7", spawn_point=[1300, 700], team="BLUE")
+tank5 = Tank(game=game, id="B1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[1000, 100], team="BLUE")
+tank6 = Tank(game=game, id="B2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[1000, 150], team="BLUE")
+tank7 = Tank(game=game, id="B3", canvas=game.canvas, tank_name="Matilda II", spawn_point=[1000, 600], team="BLUE")
+tank8 = Tank(game=game, id="B4", canvas=game.canvas, tank_name="BT-7", spawn_point=[1000, 700], team="BLUE")
 """
 
 bunker1 = Bunker(game=game, canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
