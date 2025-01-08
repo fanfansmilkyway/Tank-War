@@ -11,6 +11,8 @@ ADDR = (IP, PORT)
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
+IfGameStarted = False
+
 clients = [] # The lish which stores all the connected clients
 
 # Sending Functions
@@ -65,7 +67,6 @@ def handle_client(client:socket.socket):
             # Broadcast the message to other clients
             for conn in clients:
                 if conn != client:
-                    print("NOT CLIENT")
                     len_msg = "{:05d}".format(len(msg))
                     conn.send(len_msg.encode(FORMAT))
                     conn.send(b_msg)
@@ -88,3 +89,10 @@ while True:
     thread = threading.Thread(target=handle_client, args=(conn,))
     thread.start()
     print(f"[CONNECTION]Successfully connected with {conn}")
+    if len(clients) == 2:
+        print("[EVENT]Game Start!")
+        IfGameStarted = True
+        for client in clients:
+            client.send(b"00005")
+            client.send(b"START")
+        #break

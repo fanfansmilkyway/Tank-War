@@ -1,13 +1,19 @@
+# Built-in Modules
 from tkinter import *
 import time
 import sys
+import logging
+import threading
+# Extension Modules
 import playsound3
+import waiting
+# Customized Modules
 from classes.Tank import Tank
 from classes.Bunker import Bunker
 from classes.Puppet_Tank import Puppet_Tank
 from communication.client.client import Communication_Client
 from global_functions import *
-import threading
+
 
 def CalculateRefreshRate(tick_time):
     """
@@ -62,6 +68,12 @@ class Game:
         self.client = Communication_Client(game=self)
 
         self.GAMING = True
+        self.IfGameStarted = False # Whether the multi-player game've started or not(whehter the opponent has been ready).
+
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(filename='./log/log.log', level=logging.INFO)
+
+        self.logger.info(f"{time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())}:Game Launched")
 
         # Some tricky stuff
         self.to_create_tank = False
@@ -186,6 +198,16 @@ class Game:
         sys.exit(0)
 
 game = Game()
+
+print(game.canvas_width, game.canvas_height)
+
+Communication_Listen_Thread = threading.Thread(target=game.client.run, args=())
+Communication_Listen_Thread.start()
+
+print("IN WAITING")
+waiting.wait(lambda:game.IfGameStarted) is True # Wait until the opponent connected
+print("OUT WAITING")
+
 tank1 = Tank(game=game, id="R1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
 tank2 = Tank(game=game, id="R2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
 tank3 = Tank(game=game, id="R3", canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
@@ -202,13 +224,9 @@ bunker2 = Bunker(game=game, canvas=game.canvas, vertices=[600,400,800,100,700,45
 bunker3 = Bunker(game=game, canvas=game.canvas, vertices=[800,900,600,500,700,400,800,450])
 
 # Print canvas's width and height
-print(game.canvas_width, game.canvas_height)
-
-Communication_Thread = threading.Thread(target=game.client.run, args=())
-Communication_Thread.start()
 
 while True:
-    if game.GAMING == True:
+    if game.GAMING == True and game.IfGameStarted == True:
         T1 = time.time()
         game.refresh()
         T2 = time.time()

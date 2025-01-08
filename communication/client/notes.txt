@@ -1,0 +1,3 @@
+About the bool variable "IfGameStarted":
+As it literal meaning, it simply means 'whether the opponent is ready for the battle or not(whether they've connected to the server)"
+This variable is vital. Because it let the client side know when to send the messages. If the program sends the message before the opponent connects, the message won't be received by the opponent and cause fatal errors.

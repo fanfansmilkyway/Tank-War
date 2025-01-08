@@ -56,3 +56,6 @@ Object 2 --> None
 
 5. QUIT (Opponent quited)
 Object 1,2 --> None
+
+6. START (Inform the clients that the battle starts)
+Object 1,2 --> None

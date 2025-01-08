@@ -2,6 +2,7 @@ import socket
 import ast
 import sys
 import os
+import time
 
 IP = '192.168.1.229'
 PORT = 8081
@@ -11,9 +12,6 @@ ADDR = (IP, PORT) # Server IP
 
 external_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(external_path)
-
-from classes.Puppet_Tank import Puppet_Tank
-
 
 class Communication_Client():
     def __init__(self, game):
@@ -25,6 +23,7 @@ class Communication_Client():
             exit()
         print("[CONNECTION] Successfully connected with the server")
         self.game = game
+        self.message_cache = []
         #self.CreatePuppetTank(id="B5", model="T34-76", team="BLUE", spawn_point=[300,250])
     
     def CreatePuppetTank(self, id, model, team, spawn_point):
@@ -94,8 +93,11 @@ class Communication_Client():
             id = splitted_OBJECT1[0]
             model = splitted_OBJECT1[1]
             OBJECT2 = spawn_point = ast.literal_eval(splitted_message[2])
-            #print(OBJECT1, OBJECT2)
-            self.CreatePuppetTank(id=id, model=model, team="BLUE", spawn_point=spawn_point)
+            self.game.logger.info("Creating Puppet Tank")
+            if id[0] == "R":
+                self.CreatePuppetTank(id=id, model=model, team="RED", spawn_point=spawn_point)
+            if id[0] == "B":
+                self.CreatePuppetTank(id=id, model=model, team="BLUE", spawn_point=spawn_point)
 
         if ACTION == "MOVETO":
             OBJECT1 = tank_id = splitted_message[1] # moved tank's id
@@ -103,6 +105,11 @@ class Communication_Client():
             tank = self.game.tank_id[tank_id]
             tank.destination_x, tank.destination_y = destination[0], destination[1]
             tank.status = "MOVING"
+
+        if ACTION == "START":
+            print("GAME START!")
+            self.game.logger.info("Opponent Connected")
+            self.game.IfGameStarted = True
 
     def run(self):
         while True:
@@ -117,4 +124,6 @@ class Communication_Client():
                 except ValueError:
                     continue
                 message = self.client.recv(int(len_msg)).decode(FORMAT)
+                print(f"[Message Received] {message}")
+                self.game.logger.info(f"Message Received: {message}")
             self.Message_Parser(message=message)
