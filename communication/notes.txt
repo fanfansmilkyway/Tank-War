@@ -30,6 +30,10 @@ Object 2 --> None
 Object 1,2 --> None
 # This message should be sent by the client who quited. And the server side should forward this msg to the other client.
 
+6. ROTATE (Rotate the tank)
+Object 1 --> TankID
+Object 2 --> Rotated Angle
+
 <--------------------------------->
 
 To Client Actions: (Sent by server and received by clients)
@@ -59,3 +63,7 @@ Object 1,2 --> None
 
 6. START (Inform the clients that the battle starts)
 Object 1,2 --> None
+
+7. ROTATE (Inform the client that the opponent rotate its tank)
+Object 1 --> TankID
+Object 2 --> Rotated Angle

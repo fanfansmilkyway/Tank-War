@@ -70,6 +70,15 @@ class Communication_Client():
         self.client.send(len_msg.encode(FORMAT))
         self.client.send(message.encode(FORMAT))
 
+    def ROTATE(self, tank_id:str, rotated_angle:int):
+        """
+        Inform the server that one of our tanks rotated a certain angle
+        """
+        message = f"ROTATE*/*{tank_id}*/*{str(rotated_angle)}"
+        len_msg = "{:05d}".format(len(message))
+        self.client.send(len_msg.encode(FORMAT))
+        self.client.send(message.encode(FORMAT))
+
     def QUIT(self):
         """
         Inform the server that the client quited
@@ -115,6 +124,15 @@ class Communication_Client():
             self.game.shooter_tank.append(shooter)
             self.game.target_tank.append(target)
             self.game.to_shoot = True
+
+        if ACTION == "ROTATE":
+            OBJECT1 = tank_id = splitted_message[1]
+            OBJECT2 = rotated_angle = splitted_message[2]
+            tank = self.game.tank_id[tank_id]
+
+            self.game.rotated_tank.append(tank)
+            self.game.rotated_angle.append(rotated_angle)
+            self.game.to_rotate = True
 
         if ACTION == "START":
             print("GAME START!")

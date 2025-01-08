@@ -82,9 +82,14 @@ class Game:
         self.to_create_tank_model = []
         self.to_create_tank_spawn_point = []
         self.to_create_tank_team = []
+
         self.to_shoot = False
         self.shooter_tank = []
         self.target_tank = []
+
+        self.to_rotate = True
+        self.rotated_tank = []
+        self.rotated_angle = []
 
     def GetLeftMousePosition(self, event):
         """
@@ -134,6 +139,13 @@ class Game:
         self.to_shoot = False
         self.shooter_tank.clear()
         self.target_tank.clear()
+
+    def PuppetRotation(self):
+        for index in range(len(self.rotated_tank)):
+            self.rotated_tank[index].rotate(int(self.rotated_angle[index]))
+        self.to_rotate = False
+        self.rotated_tank.clear()
+        self.rotated_angle.clear()
     
     def RotateCounterClockwise(self, event):
         """
@@ -141,6 +153,7 @@ class Game:
         """
         for tank in self.selected_tanks:
             tank.rotate(-5)
+            self.client.ROTATE(tank.id, -5)
 
     def RotateClockwise(self, event):
         """
@@ -148,6 +161,7 @@ class Game:
         """
         for tank in self.selected_tanks:
             tank.rotate(5)
+            self.client.ROTATE(tank.id, 5)
 
     def GetRightMousePosition(self, event):
         """
@@ -203,6 +217,8 @@ class Game:
             self.CreatePuppetTank()
         if self.to_shoot == True:
             self.ShootPuppetShell()
+        if self.to_rotate == True:
+            self.PuppetRotation()
 
         game.tk.update()
 
