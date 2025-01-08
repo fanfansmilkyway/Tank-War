@@ -200,7 +200,7 @@ class Puppet_Tank:
             playsound3.playsound("./mp3/Reloading_hasn't_completed_yet.mp3", block=False)
             return
         
-        playsound3.playsound("./mp3/Cannon-firing.mp3", block=False)
+        playsound3.playsound("./mp3/Cannon_Firing.wav", block=False)
         self.IfReloaded = False
         self.canvas.itemconfig(self.reloading_indicator, fill="red")
 

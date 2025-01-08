@@ -77,7 +77,7 @@ class Communication_Client():
         message = "QUIT"
         len_msg = "{:05d}".format(len(message))
         self.client.send(len_msg.encode(FORMAT))
-        self.client.sned(message.encode(FORMAT))
+        self.client.send(message.encode(FORMAT))
 
     # Receiving Functions
     def Message_Parser(self, message:str):
@@ -112,6 +112,9 @@ class Communication_Client():
             shooter = self.game.tank_id[shooter_id]
             target = self.game.tank_id[target_id]
             
+            self.game.shooter_tank.append(shooter)
+            self.game.target_tank.append(target)
+            self.game.to_shoot = True
 
         if ACTION == "START":
             print("GAME START!")
