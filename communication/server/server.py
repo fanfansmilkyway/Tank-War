@@ -1,8 +1,8 @@
 import socket
 import threading
-import time
+import random
 
-IP = '192.168.1.229'
+IP = '192.168.1.123'
 PORT = 8081
 
 FORMAT = 'utf-8'
@@ -14,6 +14,7 @@ server.bind(ADDR)
 IfGameStarted = False
 
 clients = [] # The lish which stores all the connected clients
+teams = ["RED", "BLUE"]
 
 # Sending Functions
 def CREATE(client, tank_id:str, tank_model:str, spawn_coordinate:list):
@@ -55,6 +56,13 @@ msg = ""
 
 def handle_client(client:socket.socket):
     global msg
+    client_team = random.choice(teams)
+    teams.remove(client_team)
+    team_message = f"TEAM*/*{client_team}"
+    len_team_message = "{:05d}".format(len(team_message))
+    client.send(len_team_message.encode(FORMAT))
+    client.send(team_message.encode(FORMAT))
+    
     while True:
         len_msg = client.recv(5).decode(FORMAT)
         if len_msg != "":
@@ -71,14 +79,6 @@ def handle_client(client:socket.socket):
                     conn.send(len_msg.encode(FORMAT))
                     conn.send(b_msg)
             print(msg)
-    """
-    msg = "CREATE*/*B5+T34-76*/*[300,300]"
-    len_msg = "{:05d}".format(len(msg))
-    conn.send(len_msg.encode(FORMAT))
-    conn.send(msg.encode(FORMAT))
-    """
-    
-    
 
 # First estabilish the connection with the client
 server.listen()

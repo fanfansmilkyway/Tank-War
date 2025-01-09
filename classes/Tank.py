@@ -50,8 +50,6 @@ class Tank:
         self.IfSelected = False
         self.IfReloaded = True
 
-        self.conn.CREATE(tank_id=self.id, tank_model=self.tank_name, spawn_coordinate=self.spawn_point)
-
     def GetCentreCoordinate(self, target=None):
         """
         Return current coordinate(the centre point of the tank). Or get other tank's coordinate.

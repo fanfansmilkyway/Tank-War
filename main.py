@@ -14,7 +14,7 @@ from classes.Bunker import Bunker
 from classes.Puppet_Tank import Puppet_Tank
 from communication.client.client import Communication_Client
 from global_functions import *
-
+import Tank_Data as tank_data
 
 def CalculateRefreshRate(tick_time):
     """
@@ -61,7 +61,7 @@ class Game:
         self.RefreshRate = 1
         self.tanks = []   # The list which stores all the tanks
         self.shells = []  # The list which stores all the shells
-        self.teams = "RED"
+        self.team = "RED"
         self.bunkers = [] # The list which stores all the bunkers
 
         self.tank_id = {} # The dictionary which stores all the tanks' id and its corresponding tank object
@@ -125,14 +125,16 @@ class Game:
 
     def CreatePuppetTank(self):
         for index in range(len(self.to_create_tank_id)):
-            puppet = Puppet_Tank(game=self, canvas=self.canvas, id=self.to_create_tank_id[index], tank_name=self.to_create_tank_model[index], spawn_point=self.to_create_tank_spawn_point[index], team=self.to_create_tank_team[index])
+            if self.to_create_tank_id[index][0] != self.team[0]:
+                puppet = Puppet_Tank(game=self, canvas=self.canvas, id=self.to_create_tank_id[index], tank_name=self.to_create_tank_model[index], spawn_point=self.to_create_tank_spawn_point[index], team=self.to_create_tank_team[index])
+            if self.to_create_tank_id[index][0] == self.team[0]:
+                tank = Tank(game=self, canvas=self.canvas, id=self.to_create_tank_id[index], tank_name=self.to_create_tank_model[index], spawn_point=self.to_create_tank_spawn_point[index], team=self.to_create_tank_team[index])
         self.to_create_tank = False
         self.to_create_tank_id.clear()
         self.to_create_tank_model.clear()
         self.to_create_tank_spawn_point.clear()
         self.to_create_tank_team.clear()
-        return puppet
-    
+
     def ShootPuppetShell(self):
         for index in range(len(self.shooter_tank)):
             self.shooter_tank[index].shoot(self.target_tank[index])
@@ -230,18 +232,71 @@ game = Game()
 
 print(game.canvas_width, game.canvas_height)
 
+IfSelecting = True
+chosen_tanks = []
+def Select_Tanks():
+    def submit_tank():
+        tank = selected_tank.get()
+        chosen_tanks.append(tank)
+        selected_tank.set("PzIV H")
+        game.tk.update()
+    def finish_selecting():
+        global IfSelecting
+        print(chosen_tanks)
+        title.destroy()
+        choice_box.destroy()
+        submit_button.destroy()
+        finish_button.destroy()
+        IfSelecting = False
+
+    title = Label(game.tk, text="Choose Your Tanks, Commander!", font=("Courier", 40), fg="black", background="white")
+    title.place(relx=.5, rely=.01, anchor='n')
+    choices = tank_data.ALL_TANKS
+    selected_tank = StringVar(game.tk)
+    selected_tank.set("PzIV H")
+    choice_box = OptionMenu(game.tk, selected_tank, *choices)
+    choice_box.place(relx=.5, rely=.19, anchor="e")
+    submit_button = Button(game.tk, text="Submit", command=submit_tank)
+    submit_button.place(relx=.5, rely=.19, anchor="w")
+    finish_button = Button(game.tk, text="Finish Selecting", command=finish_selecting)
+    finish_button.place(relx=.5, rely=.21, anchor='n')
+
+    while IfSelecting==True:
+        game.tk.update()
+
+Select_Tanks()
+print("IN WAITING FOR SELECTING")
+waiting.wait(lambda:not IfSelecting) is True
+print("OUT WAITING FOR SELECTING TANKS")
+
 Communication_Listen_Thread = threading.Thread(target=game.client.run, args=())
 Communication_Listen_Thread.start()
 
-print("IN WAITING")
+print("IN WAITING FOR OPPONENT")
 waiting.wait(lambda:game.IfGameStarted) is True # Wait until the opponent connected
-print("OUT WAITING")
+print("OUT WAITING FOR OPPONENT")
 
+for index in range(len(chosen_tanks)):
+    model = chosen_tanks[index]
+    id = f"{game.team[0]}{index+1}"
+    game.to_create_tank_model.append(model)
+    game.to_create_tank_id.append(id)
+    game.to_create_tank_team.append(game.team)
+    if game.team == "RED":
+        spawn_point = [50, 100+50*index]
+    if game.team == "BLUE":
+        spawn_point = [1000, 100+50*index]
+    game.to_create_tank_spawn_point.append(spawn_point)
+    game.client.CREATE(tank_id=f"{game.team[0]}{index+1}", tank_model=chosen_tanks[index], spawn_coordinate=spawn_point)
+
+game.to_create_tank = True
+
+
+"""
 tank1 = Tank(game=game, id="R1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
 tank2 = Tank(game=game, id="R2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
 tank3 = Tank(game=game, id="R3", canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
 tank4 = Tank(game=game, id="R4", canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
-"""
 tank5 = Tank(game=game, id="B1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[1000, 100], team="BLUE")
 tank6 = Tank(game=game, id="B2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[1000, 150], team="BLUE")
 tank7 = Tank(game=game, id="B3", canvas=game.canvas, tank_name="Matilda II", spawn_point=[1000, 600], team="BLUE")

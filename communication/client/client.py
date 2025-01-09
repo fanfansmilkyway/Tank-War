@@ -4,7 +4,7 @@ import sys
 import os
 import time
 
-IP = '192.168.1.229'
+IP = '192.168.1.123'
 PORT = 8081
 
 FORMAT = 'utf-8'
@@ -133,6 +133,10 @@ class Communication_Client():
             self.game.rotated_tank.append(tank)
             self.game.rotated_angle.append(rotated_angle)
             self.game.to_rotate = True
+
+        if ACTION == "TEAM":
+            OBJECT1 = team_name = splitted_message[1]
+            self.game.team = team_name
 
         if ACTION == "START":
             print("GAME START!")

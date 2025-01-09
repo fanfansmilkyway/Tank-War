@@ -67,3 +67,7 @@ Object 1,2 --> None
 7. ROTATE (Inform the client that the opponent rotate its tank)
 Object 1 --> TankID
 Object 2 --> Rotated Angle
+
+8. TEAM (Inform the client its team)
+Object 1 --> Team Name
+Object 2 --> None
