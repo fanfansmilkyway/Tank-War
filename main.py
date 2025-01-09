@@ -236,10 +236,16 @@ IfSelecting = True
 chosen_tanks = []
 def Select_Tanks():
     def submit_tank():
+        if len(chosen_tanks) >= 10:
+            submit_button['state'] = "disabled"
+            submit_button.config(text="No More Tanks!", background="red")
+            playsound3.playsound("mp3/Error.mp3", block=False)
+            return
         tank = selected_tank.get()
         chosen_tanks.append(tank)
-        selected_tank.set("PzIV H")
+        chosen_tanks_list.insert(END, tank)
         game.tk.update()
+
     def finish_selecting():
         global IfSelecting
         print(chosen_tanks)
@@ -247,7 +253,49 @@ def Select_Tanks():
         choice_box.destroy()
         submit_button.destroy()
         finish_button.destroy()
+        description_text.destroy()
+        tank_model_label.destroy()
+        label1.destroy()
+        tank_capacity_text.destroy()
+        chosen_tanks_list.destroy()
+        label2.destroy()
+        clear_list_button.destroy()
         IfSelecting = False
+
+    def modify_capacity_description(tank_model):
+        description = """Firepower(Penetration):\n"""
+        firepower_list = tank_data.TANK_CAPABILITY[tank_model][0]
+        description = description + f"0m:    {firepower_list[0]}mm\n"
+        description = description + f"100m:  {firepower_list[1]}mm\n"
+        description = description + f"300m:  {firepower_list[2]}mm\n"
+        description = description + f"500m:  {firepower_list[3]}mm\n"
+        description = description + f"1000m: {firepower_list[4]}mm\n"
+        description = description + f"1500m: {firepower_list[5]}mm\n"
+        description = description + f"2000m: {firepower_list[6]}mm\n"
+        description = description + f"3000m: {firepower_list[7]}mm\n\n"
+        armour_list = tank_data.TANK_CAPABILITY[tank_model][1]
+        description = description + "Armour:\n"
+        description = description + f"Front: {armour_list[0]}mm\n"
+        description = description + f"Side:  {armour_list[1]}mm\n"
+        description = description + f"Rear:  {armour_list[2]}mm\n\n"
+        description = description + "Max Speed:\n"
+        description = description + f"{round(tank_data.TANK_CAPABILITY[tank_model][2]*18/5,1)}km/h\n\n"
+        description = description + "Reloading Time:\n"
+        description = description + f"{tank_data.TANK_CAPABILITY[tank_model][3]}s"
+
+        tank_capacity_text.delete("1.0", END)
+        tank_capacity_text.insert(END, description)
+
+    def change_tank_description(*args):
+        tank = selected_tank.get()
+        description_text.delete("1.0", END)
+        description_text.insert(END, tank_data.TANK_DESCRIPTION[tank])
+        modify_capacity_description(tank_model=tank)
+        tank_model_label.config(text=tank)
+
+    def clear_list(*args):
+        chosen_tanks.clear()
+        chosen_tanks_list.delete(0, END)
 
     title = Label(game.tk, text="Choose Your Tanks, Commander!", font=("Courier", 40), fg="black", background="white")
     title.place(relx=.5, rely=.01, anchor='n')
@@ -255,11 +303,30 @@ def Select_Tanks():
     selected_tank = StringVar(game.tk)
     selected_tank.set("PzIV H")
     choice_box = OptionMenu(game.tk, selected_tank, *choices)
+    selected_tank.trace_add('write', change_tank_description)  
     choice_box.place(relx=.5, rely=.19, anchor="e")
-    submit_button = Button(game.tk, text="Submit", command=submit_tank)
+    submit_button = Button(game.tk, text="Enlist!", command=submit_tank)
     submit_button.place(relx=.5, rely=.19, anchor="w")
-    finish_button = Button(game.tk, text="Finish Selecting", command=finish_selecting)
+    finish_button = Button(game.tk, text="Ready for Battle!", command=finish_selecting)
     finish_button.place(relx=.5, rely=.21, anchor='n')
+    description_text = Text(game.tk, font=("Courier", 14), background="white", fg="black", width=70, wrap=WORD)
+    description_text.insert(END, chars=tank_data.TANK_DESCRIPTION["PzIV H"])
+    description_text.place(relx=.4, rely=.19, anchor="ne")
+    tank_model_label = Label(game.tk, background="white", fg="black", font=("Tahoma", 20), text="PzIV H")
+    tank_model_label.place(relx=.2, rely=.19, anchor="s")
+
+    label1 = Label(game.tk, text="Capacity", font=("Tahoma", 20), fg="black", background="white")
+    label1.place(relx=.7, rely=.19, anchor="s")
+    tank_capacity_text = Text(game.tk, font=("Courier", 14), background="white", fg="black", width=40, height=21)
+    tank_capacity_text.place(relx=.6, rely=0.19, anchor="nw")
+    modify_capacity_description(tank_model="PzIV H")
+
+    label2 = Label(game.tk, text="Enlisted Tanks", font=('Tahoma',18), fg="black", background="white")
+    label2.place(relx=.5, rely=.45, anchor='s')
+    chosen_tanks_list = Listbox(game.tk, background="white", fg="black", height=11)
+    chosen_tanks_list.place(relx=.5, rely=.45, anchor="n")
+    clear_list_button = Button(game.tk, text="Clear", background="white", fg="black", command=clear_list)
+    clear_list_button.place(relx=.5, rely=.70, anchor='n')
 
     while IfSelecting==True:
         game.tk.update()
@@ -291,17 +358,6 @@ for index in range(len(chosen_tanks)):
 
 game.to_create_tank = True
 
-
-"""
-tank1 = Tank(game=game, id="R1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[50, 50], team="RED")
-tank2 = Tank(game=game, id="R2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[50, 80], team="RED")
-tank3 = Tank(game=game, id="R3", canvas=game.canvas, tank_name="T34-76", spawn_point=[50, 550], team="RED")
-tank4 = Tank(game=game, id="R4", canvas=game.canvas, tank_name="Matilda II", spawn_point=[50, 600], team="RED")
-tank5 = Tank(game=game, id="B1", canvas=game.canvas, tank_name="PzIV H", spawn_point=[1000, 100], team="BLUE")
-tank6 = Tank(game=game, id="B2", canvas=game.canvas, tank_name="PzIII J", spawn_point=[1000, 150], team="BLUE")
-tank7 = Tank(game=game, id="B3", canvas=game.canvas, tank_name="Matilda II", spawn_point=[1000, 600], team="BLUE")
-tank8 = Tank(game=game, id="B4", canvas=game.canvas, tank_name="BT-7", spawn_point=[1000, 700], team="BLUE")
-"""
 
 bunker1 = Bunker(game=game, canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(game=game, canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
