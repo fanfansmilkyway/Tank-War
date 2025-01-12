@@ -16,11 +16,6 @@ sys.path.append(external_path)
 class Communication_Client():
     def __init__(self, game):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.client.connect(ADDR)
-        except ConnectionRefusedError:
-            print('\033[31m', f"[ERROR]Unable to establish connection to the server. Please check your network status or the server's running status.")
-            exit()
         print("[CONNECTION] Successfully connected with the server")
         self.game = game
         self.message_cache = []
@@ -144,6 +139,11 @@ class Communication_Client():
             self.game.IfGameStarted = True
 
     def run(self):
+        try:
+            self.client.connect(ADDR)
+        except ConnectionRefusedError:
+            print('\033[31m', f"[ERROR]Unable to establish connection to the server. Please check your network status or the server's running status.")
+            exit()
         while True:
             if self.game.GAMING == False:
                 print("EXITED")

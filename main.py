@@ -243,7 +243,7 @@ def Select_Tanks():
     def submit_tank():
         if len(chosen_tanks) >= 10:
             submit_button['state'] = "disabled"
-            submit_button.config(text="No More Tanks!", background="red")
+            submit_button.config(text="No More Tanks!", background="red", fg="red")
             playsound3.playsound("mp3/Error.mp3", block=False)
             return
         tank = selected_tank.get()
@@ -348,7 +348,11 @@ Communication_Thread = threading.Thread(target=game.client.run, args=())
 Communication_Thread.start()
 
 print("IN WAITING FOR OPPONENT")
+waiting_msg = Label(game.tk, text="Waiting for the opponent...", font=("Impact", 38), fg="black", background="white")
+waiting_msg.place(relx=.5, rely=.5, anchor="center")
+game.tk.update()
 waiting.wait(lambda:game.IfGameStarted) is True # Wait until the opponent connected
+waiting_msg.destroy()
 print("OUT WAITING FOR OPPONENT")
 
 for index in range(len(chosen_tanks)):
