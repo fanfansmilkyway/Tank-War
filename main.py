@@ -23,6 +23,11 @@ def CalculateRefreshRate(tick_time):
     game.RefreshRate = round(1 / tick_time)
     game.ChangeFPSMessage(f"FPS: {game.RefreshRate}")
 
+def BGM_Loop():
+    while True:
+        playsound3.playsound("mp3/BGM -- Battle Start.mp3", block=True)
+
+
 class Game:
     def __init__(self):
         # Initialize the canvas
@@ -331,13 +336,16 @@ def Select_Tanks():
     while IfSelecting==True:
         game.tk.update()
 
+BGM_Thread = threading.Thread(target=BGM_Loop, args=())
+BGM_Thread.start()
+
 Select_Tanks()
 print("IN WAITING FOR SELECTING")
 waiting.wait(lambda:not IfSelecting) is True
 print("OUT WAITING FOR SELECTING TANKS")
 
-Communication_Listen_Thread = threading.Thread(target=game.client.run, args=())
-Communication_Listen_Thread.start()
+Communication_Thread = threading.Thread(target=game.client.run, args=())
+Communication_Thread.start()
 
 print("IN WAITING FOR OPPONENT")
 waiting.wait(lambda:game.IfGameStarted) is True # Wait until the opponent connected
