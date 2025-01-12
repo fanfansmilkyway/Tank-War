@@ -6,6 +6,6 @@ Download python from python.org and install. The python version I've tested my g
 `pip3 install -r requirements.txt`
 
 ## 3. Run the game 
-`python3 main2.py`
+`python3 main.py`
 
 For keyboard shortcuts used in the game, please check [How_To_Play.txt](How_To_Play.txt)

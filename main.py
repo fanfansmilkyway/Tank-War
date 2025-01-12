@@ -370,12 +370,14 @@ for index in range(len(chosen_tanks)):
 
 game.to_create_tank = True
 
-
 bunker1 = Bunker(game=game, canvas=game.canvas, vertices=[400,400,300,300,300,400,400,450])
 bunker2 = Bunker(game=game, canvas=game.canvas, vertices=[600,400,800,100,700,450,750,450])
 bunker3 = Bunker(game=game, canvas=game.canvas, vertices=[800,900,600,500,700,400,800,450])
 
-# Print canvas's width and height
+team_msg = Label(game.tk, text=f"You are the {game.team} team!", fg="black", font=("Courier", 18), background="white", border=0, padx=0, pady=0)
+team_msg.place(relx=.0, rely=.0, anchor="nw")
+game.tk.update()
+game.tk.after(10000, team_msg.destroy)
 
 while True:
     if game.GAMING == True and game.IfGameStarted == True:
