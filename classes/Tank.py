@@ -50,6 +50,8 @@ class Tank:
         self.IfSelected = False
         self.IfReloaded = True
 
+        self.sight_range = 1000
+
     def GetCentreCoordinate(self, target=None):
         """
         Return current coordinate(the centre point of the tank). Or get other tank's coordinate.
@@ -58,6 +60,10 @@ class Tank:
             target = self
         current_coordinate = self.canvas.coords(target.tank)
         x1, y1, x2, y2, x3, y3, x4, y4 = current_coordinate
+        try:
+            x1, y1, x2, y2, x3, y3, x4, y4 = current_coordinate
+        except ValueError: # ValueError: not enough values to unpack (expected 8, got 0)
+            return -1, -1
         # Solve linear functions
         k1 = (y1-y3) / (x1-x3)
         b1 = y1 - x1*k1
@@ -233,6 +239,20 @@ class Tank:
         self.game.tk.after(300, self.canvas.delete, DistanceLabel)
         self.game.tk.after(round(self.reloading_speed*1000), self.reload)
     
+    def spot_enemy(self):
+        """
+        Determine whether the enemy puppet tank is in sight. If it does, show it on the screen.
+        """
+        current_x, current_y = self.GetCentreCoordinate()
+        for target_tank in self.game.puppet_tanks:
+            target_tank_x, target_tank_y = target_tank.GetCentreCoordinate()
+            if target_tank_x == -1 and target_tank_y == -1:
+                continue
+            if if_tank_spotted(sight_range=self.sight_range, A=(current_x, current_y), B=(target_tank_x, target_tank_y), all_bunkers=self.game.bunkers) == True:
+                target_tank.BeSpotted = True
+                self.game.ChangeDebugMessage(message=f"{target_tank.id} be spotted!")
+                #playsound3.playsound("./mp3/Enemy_Spotted.wav", block=False)
+
     def reload(self):
         self.IfReloaded = True
         playsound3.playsound("./mp3/Reload_Completed.mp3", block=False)
@@ -243,6 +263,7 @@ class Tank:
             self.canvas.itemconfig(self.tank, fill="#ffffff")
         if self.IfSelected == True:
             self.canvas.itemconfig(self.tank, fill=self.team)
+        self.spot_enemy()
         if self.status == "IDLE":
             pass
         if self.status == "MOVING":

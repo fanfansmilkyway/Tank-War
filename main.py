@@ -16,6 +16,10 @@ from communication.client.client import Communication_Client
 from global_functions import *
 import Tank_Data as tank_data
 
+
+# Game Settings
+BGM = False
+
 def CalculateRefreshRate(tick_time):
     """
     Calculate the Refresh Rate.
@@ -26,7 +30,6 @@ def CalculateRefreshRate(tick_time):
 def BGM_Loop():
     while True:
         playsound3.playsound("mp3/BGM -- Battle Start.mp3", block=True)
-
 
 class Game:
     def __init__(self):
@@ -65,6 +68,7 @@ class Game:
 
         self.RefreshRate = 1
         self.tanks = []   # The list which stores all the tanks
+        self.puppet_tanks = [] # The list which stores all the puppet tanks
         self.shells = []  # The list which stores all the shells
         self.team = "RED"
         self.bunkers = [] # The list which stores all the bunkers
@@ -105,6 +109,8 @@ class Game:
         if self.IfReadyFire == False:
             for tank in self.tanks:
                 bbox = self.canvas.bbox(tank.tank)  # Bounding Box
+                if bbox == None:
+                    continue
                 if bbox[0] < mouse_x < bbox[2] and bbox[1] < mouse_y < bbox[3] and not isinstance(tank, Puppet_Tank):
                     if tank.IfSelected == False:
                         tank.IfSelected = True
@@ -230,7 +236,9 @@ class Game:
         game.tk.update()
 
     def end_game(self):
+        print("Game Ended")
         self.GAMING = False
+        self.canvas.destroy()
         sys.exit(0)
 
 game = Game()
@@ -242,8 +250,9 @@ chosen_tanks = []
 def Select_Tanks():
     def submit_tank():
         if len(chosen_tanks) >= 10:
-            submit_button['state'] = "disabled"
-            submit_button.config(text="No More Tanks!", background="red", fg="red")
+            reach_tank_limit_warning = Label(text="You've reached the tank limit of 10! You cannot add more tanks.", font=("Tohoma", 12), fg="red", background="white")
+            reach_tank_limit_warning.place(relx=.5, rely=.16, anchor="s")
+            game.tk.after(3000, reach_tank_limit_warning.destroy)
             playsound3.playsound("mp3/Error.mp3", block=False)
             return
         tank = selected_tank.get()
@@ -336,8 +345,9 @@ def Select_Tanks():
     while IfSelecting==True:
         game.tk.update()
 
-BGM_Thread = threading.Thread(target=BGM_Loop, args=())
-BGM_Thread.start()
+if BGM == True:
+    BGM_Thread = threading.Thread(target=BGM_Loop, args=())
+    BGM_Thread.start()
 
 Select_Tanks()
 print("IN WAITING FOR SELECTING")
@@ -362,9 +372,9 @@ for index in range(len(chosen_tanks)):
     game.to_create_tank_id.append(id)
     game.to_create_tank_team.append(game.team)
     if game.team == "RED":
-        spawn_point = [50, 100+50*index]
+        spawn_point = [50, 300+50*index]
     if game.team == "BLUE":
-        spawn_point = [1000, 100+50*index]
+        spawn_point = [1000, 300+50*index]
     game.to_create_tank_spawn_point.append(spawn_point)
     game.client.CREATE(tank_id=f"{game.team[0]}{index+1}", tank_model=chosen_tanks[index], spawn_coordinate=spawn_point)
 

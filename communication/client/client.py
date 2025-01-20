@@ -138,6 +138,11 @@ class Communication_Client():
             self.game.logger.info("Opponent Connected")
             self.game.IfGameStarted = True
 
+        if ACTION == "DESTROYED":
+            OBJECT1 = destroyed_tank_id = splitted_message[1]
+            destroyed_tank = self.game.tank_id[destroyed_tank_id]
+            destroyed_tank.destroyed()
+
     def run(self):
         try:
             self.client.connect(ADDR)

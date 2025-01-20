@@ -1,0 +1,4 @@
+[BUG]
+1. The background music doesn't cease even if the window is closed. (Cmd+Q on mac)
+2. To determine whether a tank is destroyed, this action should be excuted on just one side of the player, not both(should be the side whose tank gets hit). Otherwise some contradiction may occur.
+3. Sometimes unable to start the multiplayer game. It is probably due to the communication between the server and the client. (00005, START)

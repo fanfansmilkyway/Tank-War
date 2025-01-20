@@ -49,9 +49,10 @@ class Puppet_Tank:
         self.status = "IDLE"  # Status are: "IDLE", "MOVING", "DESTROYED"
         self.IfSelected = False
         self.IfReloaded = True
+        self.BeSpotted = False
 
         self.game.tanks.append(self)
-        
+        self.game.puppet_tanks.append(self)
 
     def GetCentreCoordinate(self, target=None):
         """
@@ -60,7 +61,11 @@ class Puppet_Tank:
         if target == None:
             target = self
         current_coordinate = self.canvas.coords(target.tank)
-        x1, y1, x2, y2, x3, y3, x4, y4 = current_coordinate
+        try:
+            x1, y1, x2, y2, x3, y3, x4, y4 = current_coordinate
+        except ValueError: # ValueError: not enough values to unpack (expected 8, got 0)
+            return -1, -1
+            # self may be destroyed or invisible
         # Solve linear functions
         k1 = (y1-y3) / (x1-x3)
         b1 = y1 - x1*k1
@@ -154,43 +159,18 @@ class Puppet_Tank:
             centre_x, centre_y, direction_x, direction_y, arrow=LAST, fill="black")
         self.tank = self.canvas.create_polygon(
             new_vertices, outline=self.team, fill=self.team)
-
+    
     def GetHit(self, shooter: str, distance: float, part: int):
         """
-        Input: The tank name of the shooter, distance from the shooter, part hit by the shooter.
-        Output: Whether the tank is destroyed.
+        Useless function, just make this class similar to the Tank class, in order to remove the difference and incompatibility.
         """
-        armor = TANK_CAPABILITY[self.tank_name][1][part]  # Part: 0 for front, 1 for side, 2 for rear
-        # Calculate the real penetration
-        DistanceChoices = [0, 100, 300, 500, 1000, 1500, 2000]
-        HigherDistances = [0, 100, 300, 500, 1000, 1500, 2000, 3000]
-        HigherDistanceChoice = 3000
-        for d in DistanceChoices:
-            if distance <= d:
-                HigherDistanceChoice = d
-                break
-        HigherDistanceChoiceIndex = HigherDistances.index(HigherDistanceChoice)
-        HigherPenetration = TANK_CAPABILITY[shooter][0][HigherDistanceChoiceIndex]
-        if HigherDistanceChoiceIndex != 0:
-            LowerDistanceChoice = DistanceChoices[HigherDistanceChoiceIndex-1]
-            LowerPenetration = TANK_CAPABILITY[shooter][0][HigherDistanceChoiceIndex-1]
-        else:
-            LowerDistanceChoice = 0
-            LowerPenetration = HigherPenetration - 1
-        RealPenetration = (HigherPenetration*(distance-LowerDistanceChoice) + LowerPenetration*(HigherDistanceChoice-distance)) / (HigherDistanceChoice-LowerDistanceChoice)
-        # Calculate the detroyed rate
-        if RealPenetration - armor > -17:
-            # For further calculation formula details, please see notes.txt
-            Destroyed_Probability = 1 / ((500 / ((RealPenetration-armor+17)**2))**2 + 1)
-        else:
-            Destroyed_Probability = 0
-        self.game.ChangeMessageBoxText(f"Armor: {armor}\nPenetration: {RealPenetration}\nDestruction Rate: {round(Destroyed_Probability,2)}")
-        print(Destroyed_Probability)
-        
-        IfDestroyed = random.choices(
-            [True, False], [Destroyed_Probability, 1-Destroyed_Probability])
-        if IfDestroyed == [True]:
-            self.status = "DESTROYED"
+        pass
+
+    def destroyed(self):
+        """
+        Trigger by the opponent message 'DESTROYED'. To make the puppet tank 'destroyed'.
+        """
+        self.status = "DESTROYED"
 
     def shoot(self, target):
         if target.team == self.team: 
@@ -228,6 +208,10 @@ class Puppet_Tank:
             self.canvas.itemconfig(self.tank, fill="#ffffff")
         if self.IfSelected == True:
             self.canvas.itemconfig(self.tank, fill=self.team)
+        if self.BeSpotted == True:
+            self.canvas.itemconfigure(self.tank, state='normal')
+        if self.BeSpotted == False:
+            self.canvas.itemconfigure(self.tank, state='hidden')
         if self.status == "IDLE":
             pass
         if self.status == "MOVING":
